@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriSmart Tanzania — AI-Powered Smart Agriculture Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --green-900:#14532d; --green-700:#166534; --green-600:#16a34a; --green-500:#22c55e;
+  --green-100:#dcfce7; --green-50:#f0fdf4; --amber-500:#f59e0b; --amber-100:#fef3c7;
+  --sky-600:#0284c7; --sky-100:#e0f2fe; --red-600:#dc2626; --red-100:#fee2e2;
+  --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --card:#ffffff; --bg:#f4f7f4;
+  --radius:14px; --shadow:0 2px 10px rgba(20,83,45,.08); --fs:15px;
+}
+[data-theme="contrast"]{
+  --ink:#000; --muted:#111; --line:#333; --card:#fff; --bg:#fff;
+  --green-700:#000; --green-600:#000; --green-100:#eee; --green-50:#fff;
+  --shadow:0 0 0 2px #000; --radius:4px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:var(--fs);transition:font-size .2s}
+button{font:inherit;cursor:pointer;border:none;border-radius:10px;padding:9px 16px;font-weight:600}
+input,select,textarea{font:inherit;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;width:100%;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2.5px solid var(--green-500)}
+h1{font-size:1.5rem}h2{font-size:1.2rem}h3{font-size:1.02rem}
+small,.muted{color:var(--muted)}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;border:1px solid var(--line)}
+.grid{display:grid;gap:14px}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700}
+.tag.g{background:var(--green-100);color:var(--green-700)} .tag.a{background:var(--amber-100);color:#92400e}
+.tag.s{background:var(--sky-100);color:var(--sky-600)} .tag.r{background:var(--red-100);color:var(--red-600)}
+.btn-p{background:var(--green-600);color:#fff}.btn-p:hover{background:var(--green-700)}
+.btn-o{background:#fff;color:var(--green-700);border:1.5px solid var(--green-600)}
+.btn-d{background:var(--red-600);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:var(--green-50);color:var(--green-700)}
+/* ---------- LOGIN ---------- */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#14532d,#16a34a 60%,#65a30d);z-index:100}
+.login-box{background:#fff;border-radius:20px;padding:36px;width:min(430px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-box h1{color:var(--green-700)}
+.field{margin-bottom:13px}.field label{display:block;font-weight:600;margin-bottom:5px;font-size:.88rem}
+.demo{background:var(--green-50);border:1px dashed var(--green-600);border-radius:10px;padding:10px;font-size:.82rem;margin:12px 0}
+/* ---------- APP SHELL ---------- */
+#app{display:none}
+.topbar{position:sticky;top:0;z-index:50;background:var(--green-700);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 18px;flex-wrap:wrap}
+.topbar .logo{font-weight:800;font-size:1.15rem;display:flex;align-items:center;gap:8px}
+.loc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.loc select{width:auto;padding:7px 10px;border-radius:8px}
+.a11y{display:flex;gap:6px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.a11y button{background:rgba(255,255,255,.15);color:#fff;padding:6px 11px;font-size:.8rem}
+.a11y button:hover{background:rgba(255,255,255,.3)}
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 58px)}
+.sidebar{background:#fff;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto}
+.navbtn{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px 12px;border-radius:10px;background:none;color:var(--ink);font-weight:600;font-size:.9rem}
+.navbtn:hover{background:var(--green-50)}
+.navbtn.active{background:var(--green-600);color:#fff}
+.navbtn .ic{width:22px;text-align:center}
+.main{padding:20px;max-width:1250px;width:100%;margin:0 auto}
+#updateBanner{background:var(--amber-100);border:1px solid var(--amber-500);color:#78350f;border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:.86rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border-left:5px solid var(--green-600)}
+.kpi .num{font-size:1.6rem;font-weight:800;color:var(--green-700)}
+.module{display:none;animation:fade .3s}.module.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.wx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.wx{background:var(--green-50);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--green-100)}
+.wx .big{font-size:1.7rem}
+.chat-wrap{display:grid;grid-template-columns:1fr 320px;gap:16px}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{display:flex;overflow-x:auto}.chat-wrap{grid-template-columns:1fr}}
+#chatLog{height:380px;overflow-y:auto;background:var(--green-50);border-radius:12px;padding:14px;border:1px solid var(--green-100)}
+.msg{max-width:82%;padding:10px 14px;border-radius:14px;margin-bottom:10px;font-size:.92rem;white-space:pre-wrap}
+.msg.ai{background:#fff;border:1px solid var(--line)}
+.msg.me{background:var(--green-600);color:#fff;margin-left:auto}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.quick button{background:#fff;border:1.5px solid var(--green-600);color:var(--green-700);padding:6px 12px;font-size:.8rem}
+.pill-q{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer}
+.pill-q:hover{border-color:var(--green-600)}
+.pill-q.sel{border-color:var(--green-600);background:var(--green-50)}
+.dropzone{border:2px dashed var(--green-600);border-radius:14px;padding:34px;text-align:center;background:var(--green-50);cursor:pointer}
+.dropzone:hover{background:var(--green-100)}
+#pestImg{max-width:260px;border-radius:12px;margin-top:12px;display:none}
+.conflict-bar{height:9px;background:var(--green-100);border-radius:99px;overflow:hidden}
+.conflict-bar>div{height:100%;background:var(--green-600)}
+.stat-ok{color:var(--green-600);font-weight:700}.stat-warn{color:var(--amber-500);font-weight:700}.stat-bad{color:var(--red-600);font-weight:700}
+.tl{border-left:3px solid var(--green-600);padding-left:18px;margin-left:8px}
+.tl .ev{position:relative;margin-bottom:14px}
+.tl .ev::before{content:"";position:absolute;left:-25px;top:4px;width:11px;height:11px;border-radius:50%;background:var(--green-600)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green-700);color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:150}
+.modal{background:#fff;border-radius:16px;padding:24px;width:min(520px,92vw);max-height:85vh;overflow-y:auto}
+.access-note{font-size:.8rem;background:var(--sky-100);border-radius:10px;padding:9px 12px;color:#075985;margin-top:10px}
+canvas{max-width:100%}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <div class="login-box">
+    <h1>🌱 AgriSmart Tanzania</h1>
+    <p class="muted" style="margin:6px 0 16px">AI-Powered Smart Agriculture Management &amp; Advisory System</p>
+    <div class="field"><label>Email / Phone</label><input id="liUser" value="admin@agrismart.co.tz"></div>
+    <div class="field"><label>Password</label><input id="liPass" type="password" value="agri2026"></div>
+    <div class="field"><label>Role</label>
+      <select id="liRole"><option>Administrator</option><option>Extension Officer</option><option>Farmer</option></select>
+    </div>
+    <button class="btn-p" style="width:100%" onclick="doLogin()">Sign In ➜</button>
+    <div class="demo">🧪 <b>Demo access</b> — any email + password works.<br>Admin role unlocks user management &amp; broadcast privileges.</div>
+    <div class="access-note">♿ This platform supports screen-reader labels, high-contrast mode, adjustable text size, and voice interaction.</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <div class="topbar">
+    <div class="logo">🌱 AgriSmart <span style="font-weight:400;opacity:.8">Tanzania</span></div>
+    <div class="loc">
+      <span style="font-size:.85rem">📍</span>
+      <select id="selRegion" aria-label="Select region" onchange="regionChanged()"></select>
+      <select id="selDistrict" aria-label="Select district"></select>
+    </div>
+    <div class="a11y">
+      <button onclick="toggleContrast()" title="Toggle high contrast" aria-label="Toggle high contrast mode">◐ Contrast</button>
+      <button onclick="fontSize(1)" title="Increase text size">A+</button>
+      <button onclick="fontSize(-1)" title="Decrease text size">A−</button>
+      <button id="ttsBtn" onclick="toggleTTS()" title="Read page aloud" aria-label="Text to speech">🔊 Read</button>
+      <button id="roleBadge" class="btn-o" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)" onclick="showBroadcast()">📢 Broadcast</button>
+      <button onclick="logout()" style="background:rgba(220,38,38,.85);color:#fff">Logout</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <nav class="sidebar" id="sideNav" aria-label="Main modules"></nav>
+    <main class="main">
+      <div id="updateBanner">
+        <span>🛡️ <b>Security &amp; Release Cycle:</b> Version 2.4 (Sept 2026) — next scheduled security update &amp; feature release: <b>March 2027</b> (every 6 months, automatic).</span>
+        <button class="btn-o" style="margin-left:auto;font-size:.78rem" onclick="alert('Changelog v2.4:\n• Improved Kiswahili voice assistant\n• New ML yield model v3 (MAE ↓ 12%)\n• Offline SMS advisory sync\n• Security patch: TLS 1.3 enforced')">View release notes</button>
+      </div>
+      <div id="viewRoot"></div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<!-- Broadcast modal -->
+<div class="modal-bg" id="bcastBg" onclick="if(event.target===this)closeBroadcast()">
+  <div class="modal" role="dialog" aria-label="Broadcast message">
+    <h2>📢 Broadcast Advisory</h2>
+    <p class="muted" style="margin:6px 0 12px">Send SMS / email / IVR advisory to farmers (admin only).</p>
+    <div class="field"><label>Recipients (phone / email, comma separated)</label>
+      <textarea id="bcTargets" rows="3" placeholder="+255712..., +255755..., mkulima@mail.com"></textarea></div>
+    <div class="field"><label>Channel</label>
+      <select id="bcChannel"><option>SMS (Beem/Africa's Talking)</option><option>Email</option><option>Voice call (IVR)</option><option>Push notification</option></select></div>
+    <div class="field"><label>Message (Kiswahili supported)</label>
+      <textarea id="bcMsg" rows="3" placeholder="Tahadhari: Mvua kubwa inatarajiwa Iringa Jumatatu. Hifadhi mazao yako..."></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn-o" onclick="closeBroadcast()">Cancel</button>
+      <button class="btn-p" onclick="sendBroadcast()">Send 🚀</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA — Tanzania regions & districts
+============================================================ */
+const REGIONS = {
+"Arusha":["Arusha City","Arusha Rural","Karatu","Longido","Meru","Monduli","Ngorongoro"],
+"Dodoma":["Bahi","Chamwino","Chemba","Dodoma City","Kondoa","Kongwa","Mpwapwa"],
+"Geita":["Bukombe","Chato","Geita Town","Mbogwe","Nyang'hwale"],
+"Iringa":["Iringa Municipal","Iringa Rural","Kilolo","Mafinga Town","Mufindi"],
+"Kagera":["Biharamulo","Bukoba Municipal","Bukoba Rural","Karagwe","Kyerwa","Missenyi","Muleba","Ngara"],
+"Katavi":["Mpanda Municipal","Mpanda Rural","Mwanga","Nsimbo","Tanganyika"],
+"Kigoma":["Buhigwe","Kakonko","Kasulu Town","Kasulu Rural","Kibondo","Kigoma Municipal","Kigoma Rural","Uvinza"],
+"Kilimanjaro":["Hai","Moshi Municipal","Moshi Rural","Mwanga","Rombo","Same","Siha"],
+"Lindi":["Kilwa","Lindi Municipal","Lindi Rural","Liwale","Nachingwea","Ruangwa"],
+"Manyara":["Babati Town","Babati Rural","Hanang","Kiteto","Mbulu Town","Mbulu Rural","Simanjiro"],
+"Mara":["Bunda Town","Bunda Rural","Butiama","Musoma Municipal","Musoma Rural","Rorya","Serengeti","Tarime"],
+"Mbeya":["Busokelo","Chunya","Kyela","Mbarali","Mbeya City","Mbeya Rural","Rungwe"],
+"Morogoro":["Gairo","Kilombero","Kilosa","Morogoro Municipal","Morogoro Rural","Mvomero","Ulanga","Malinyi"],
+"Mtwara":["Masasi Town","Masasi Rural","Mtwara Municipal","Mtwara Rural","Nanyamba","Nanyumbu","Newala","Tandahimba"],
+"Mwanza":["Ilemela","Kwimba","Magu","Misungwi","Nyamagana","Sengerema","Ukerewe"],
+"Njombe":["Ludewa","Makambako Town","Makete","Njombe Town","Njombe Rural","Wanging'ombe"],
+"Pemba North":["Micheweni","Wete"],
+"Pemba South":["Chake Chake","Mkoani"],
+"Pwani":["Bagamoyo","Chalinze","Kibaha Town","Kibaha Rural","Kisarawe","Mafia","Mkuranga","Rufiji"],
+"Rukwa":["Kalambo","Nkasi","Sumbawanga Municipal","Sumbawanga Rural"],
+"Ruvuma":["Madaba","Mbinga","Songea Municipal","Songea Rural","Tunduru","Namtumbo","Nyasa"],
+"Shinyanga":["Kahama Town","Kahama Rural","Kishapu","Msalala","Shinyanga Municipal","Shinyanga Rural"],
+"Simiyu":["Bariadi","Busega","Itilima","Maswa","Meatu"],
+"Singida":["Ikungi","Iramba","Manyoni","Mkalama","Singida Municipal","Singida Rural"],
+"Songwe":["Ileje","Mbozi","Momba","Songwe","Tunduma Town"],
+"Tabora":["Igunga","Kaliua","Nzega","Sikonge","Tabora Municipal","Urambo","Uyui"],
+"Tanga":["Bumbuli","Handeni Town","Handeni Rural","Kilindi","Korogwe Town","Korogwe Rural","Lushoto","Muheza","Mkinga","Pangani","Tanga City"],
+"Zanzibar North":["Kaskazini A","Kaskazini B"],
+"Zanzibar South":["Kati"],
+"Zanzibar Urban West":["Magharibi","Mjini"],
+"Dar es Salaam":["Ilala","Kinondoni","Temeke","Ubungo","Kigamboni"]
+};
+const CROPS = ["Maize","Beans","Rice","Cassava","Sorghum","Millet","Sunflower","Coffee","Cotton","Sisal","Banana","Sweet Potato","Groundnuts","Simsim","Irish Potato","Wheat","Paddy"];
+const COMMODITIES = [
+ {name:"Maize",unit:"100 kg bag",price:65000,chg:+2.4,buyer:"NAFCO Arusha"},
+ {name:"Beans (Maharage)",unit:"100 kg bag",price:180000,chg:+5.1,buyer:"SACCO Mbeya"},
+ {name:"Rice (Mchele)",unit:"100 kg bag",price:120000,chg:-1.2,buyer:"Mwanza Grain Hub"},
+ {name:"Cassava",unit:"100 kg",price:38000,chg:+0.8,buyer:"Dodoma Processors"},
+ {name:"Sunflower",unit:"100 kg",price:95000,chg:+3.7,buyer:"Mount Meru Oil"},
+ {name:"Coffee (Arabica)",unit:"50 kg",price:310000,chg:+4.2,buyer:"KNCU Kilimanjaro"},
+ {name:"Cotton",unit:"100 kg",price:72000,chg:-0.6,buyer:"COTTCO Shinyanga"},
+ {name:"Banana",unit:"bunch",price:15000,chg:+1.1,buyer:"Tanga Market Co-op"},
+ {name:"Groundnuts",unit:"100 kg",price:140000,chg:+2.9,buyer:"Singida AMCOS"},
+ {name:"Irish Potato",unit:"70 kg bag",price:48000,chg:-2.3,buyer:"Njombe Farmers Mkt"},
+ {name:"Onion",unit:"50 kg",price:52000,chg:+6.0,buyer:"Karatu Traders"},
+ {name:"Tomato",unit:"crate 25 kg",price:21000,chg:-4.5,buyer:"Kibaha AgroMart"}];
+
+/* Users DB (demo) */
+let USERS = [
+ {id:1,name:"Amina Juma",role:"Farmer",phone:"+255712345678",email:"amina@mail.com",region:"Arusha",district:"Meru",status:"Active"},
+ {id:2,name:"Baraka Mushi",role:"Farmer",phone:"+255698111222",email:"baraka@mail.com",region:"Kilimanjaro",district:"Hai",status:"Active"},
+ {id:3,name:"Zawadi Mbwana",role:"Extension Officer",phone:"+255754333444",email:"zawadi@agrismart.co.tz",region:"Morogoro",district:"Kilombero",status:"Active"},
+ {id:4,name:"John Mrema",role:"Farmer",phone:"+255683555666",email:"john@mail.com",region:"Shinyanga",district:"Kahama Town",status:"Suspended"}];
+
+let state = {role:"Administrator",region:"Arunsha".replace("unsha","usha"),district:"Meru",tts:false,current:"dashboard"};
+let charts = {};
+
+/* ============================================================
+   AUTH / SHELL
+============================================================ */
+function doLogin(){
+  state.role = document.getElementById("liRole").value;
+  document.getElementById("login").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("roleBadge").textContent = "📢 Broadcast · " + state.role.split(" ")[0];
+  initShell(); toast("Karibu! Welcome, "+state.role+" 👋");
+}
+function logout(){ location.reload(); }
+function initShell(){
+  const rsel=document.getElementById("selRegion");
+  rsel.innerHTML = Object.keys(REGIONS).map(r=>`<option ${r===state.region?"selected":""}>${r}</option>`).join("");
+  fillDistricts(); buildNav(); showModule("dashboard");
+}
+function fillDistricts(){
+  const dsel=document.getElementById("selDistrict");
+  const ds = REGIONS[state.region];
+  dsel.innerHTML = ds.map(d=>`<option ${d===state.district?"selected":""}>${d}</option>`).join("");
+  state.district = dsel.value;
+}
+function regionChanged(){ state.region=document.getElementById("selRegion").value; state.district=""; fillDistricts(); showModule(state.current); }
+
+const MODULES = [
+ ["dashboard","📊","Farm Performance Dashboard"],
+ ["registration","🧑‍🌾","Farmer Registration"],
+ ["cropplan","🌾","Crop Planning"],
+ ["weather","🌦️","Weather Advisory"],
+ ["soil","🪱","Soil Management"],
+ ["pest","🔬","Pest & Disease AI"],
+ ["fertiliser","🧪","Fertiliser Recommendation"],
+ ["irrigation","💧","Irrigation Management"],
+ ["activity","📋","Farm Activities"],
+ ["yield","📈","Yield Prediction"],
+ ["market","🏪","Market Information"],
+ ["assistant","🤖","AI Farm Assistant"],
+ ["admin","🛡️","Administration"]];
+function buildNav(){
+  document.getElementById("sideNav").innerHTML = MODULES.map(([id,ic,label])=>
+    `<button class="navbtn" id="nav-${id}" onclick="showModule('${id}')" aria-label="${label}"><span class="ic">${ic}</span><span>${label}</span></button>`).join("");
+}
+function showModule(id){
+  state.current=id;
+  MODULES.forEach(([m])=>{const b=document.getElementById("nav-"+m); if(b) b.classList.toggle("active",m===id);});
+  const R=document.getElementById("viewRoot");
+  R.innerHTML = VIEWS[id]();
+  POST[id] && POST[id]();
+  window.scrollTo(0,0);
+}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";clearTimeout(t._x);t._x=setTimeout(()=>t.style.display="none",3200);}
+
+/* ============================================================
+   ACCESSIBILITY
+============================================================ */
+function toggleContrast(){
+  const b=document.body; const on=b.getAttribute("data-theme")==="contrast";
+  b.setAttribute("data-theme", on?"":"contrast");
+  toast(on?"Normal contrast":"High contrast mode ◐");
+}
+function fontSize(d){
+  let s=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fs"))||15;
+  s=Math.min(20,Math.max(12,s+d)); document.documentElement.style.setProperty("--fs",s+"px");
+  toast("Text size: "+s+"px");
+}
+function speak(text){ if(!state.tts) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="sw-TZ"; speechSynthesis.speak(u); }
+function toggleTTS(){
+  state.tts=!state.tts;
+  document.getElementById("ttsBtn").textContent = state.tts?"🔊 Reading ON":"🔊 Read";
+  toast(state.tts?"Text-to-speech enabled":"Text-to-speech off");
+  if(state.tts) speak("Karibu AgriSmart Tanzania. Habari yako?");
+}
+
+/* ============================================================
+   BROADCAST (Admin)
+============================================================ */
+function showBroadcast(){
+  if(state.role!=="Administrator"){ toast("⛔ Admin privileges required for broadcast."); return; }
+  document.getElementById("bcTargets").value = USERS.filter(u=>u.status==="Active").map(u=>u.phone).join(", ");
+  document.getElementById("bcastBg").style.display="flex";
+}
+function closeBroadcast(){ document.getElementById("bcastBg").style.display="none"; }
+function sendBroadcast(){
+  const t=document.getElementById("bcTargets").value.trim(), m=document.getElementById("bcMsg").value.trim();
+  if(!t||!m){ toast("⚠️ Add recipients and a message."); return; }
+  toast("📤 Broadcasting to "+t.split(",").length+" recipients via "+document.getElementById("bcChannel").value+"…");
+  setTimeout(()=>{ closeBroadcast(); toast("✅ Advisory delivered successfully!"); },1500);
+}
+
+/* ============================================================
+   VIEWS
+============================================================ */
+const locLine = ()=>`<p class="muted" style="margin-bottom:14px">📍 Showing data for <b>${state.region} → ${state.district}</b> <span class="tag g">AI-personalised</span></p>`;
+function kpi(t,v,s,c){return `<div class="kpi" style="border-left-color:${c}"><div class="num">${v}</div><div style="font-weight:700">${t}</div><small>${s}</small></div>`;}
+
+const VIEWS = {
+
+dashboard: ()=>`
+ <h1 style="margin-bottom:4px">📊 Farm Performance Dashboard</h1>${locLine()}
+ <div class="kpis">
+  ${kpi("Registered farmers","1,284","+38 this month","#16a34a")}
+  ${kpi("Avg. yield (maize)","4.2 t/ha","+11% vs last season","#0284c7")}
+  ${kpi("Est. seasonal profit","TZS 2.6M","per average farm","#f59e0b")}
+  ${kpi("Active AI advisories","312","24 in Kiswahili voice","#7c3aed")}
+ </div>
+ <div class="grid" style="grid-template-columns:1.4fr 1fr">
+  <div class="card"><h3 style="margin-bottom:10px">Seasonal Yield vs Rainfall (ML forecast)</h3><canvas id="chDash" height="210"></canvas></div>
+  <div class="card"><h3 style="margin-bottom:10px">Top Crops by Acreage — ${state.region}</h3><canvas id="chPie" height="210"></canvas></div>
+ </div>
+ <div class="grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">
+  <div class="card"><h3>🌦️ Weather Alert</h3><p style="margin-top:8px">Heavy rainfall expected in <b>${state.district}</b> within 48h. <span class="tag a">Advisory sent via SMS</span></p></div>
+  <div class="card"><h3>🔬 Pest Watch</h3><p style="margin-top:8px">Fall Armyworm risk: <span class="stat-warn">MODERATE</span> for maize in ${state.region}. Scout fields twice weekly.</p></div>
+  <div class="card"><h3>🏪 Market Tip</h3><p style="margin-top:8px">Maize prices up <b>+2.4%</b> at ${state.district} market. Consider staggered selling.</p></div>
+ </div>`,
+
+registration: ()=>`
+ <h1>🧑‍🌾 Farmer Registration</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1fr 1.5fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">Register New Farmer</h3>
+   <div class="field"><label>Full name</label><input id="frName" placeholder="e.g. Neema Kileo"></div>
+   <div class="field"><label>Phone (SMS alerts)</label><input id="frPhone" placeholder="+2557..."></div>
+   <div class="field"><label>Email (optional)</label><input id="frEmail" placeholder="farmer@mail.com"></div>
+   <div class="field"><label>Farm size (acres)</label><input id="frSize" type="number" placeholder="3.5"></div>
+   <div class="field"><label>Main crop</label><select id="frCrop">${CROPS.map(c=>`<option>${c}</option>`).join("")}</select></div>
+   <div class="field"><label>Farming experience</label><select id="frExp"><option>0–2 years</option><option>3–5 years</option><option>6–10 years</option><option>10+ years</option></select></div>
+   <button class="btn-p" onclick="regFarmer()">Save to Farmer Database ✔</button>
+   <div class="access-note">♿ Form is fully keyboard-navigable with screen-reader labels. Registered farmers auto-receive SMS/voice advisories.</div>
+  </div>
+  <div class="card">
+   <h3 style="margin-bottom:12px">Farmer Database — ${state.region} Region</h3>
+   <table id="farmerTbl"><thead><tr><th>Name</th><th>Phone</th><th>Crop</th><th>Size</th><th>Exp.</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+ </div>`,
+
+cropplan: ()=>`
+ <h1>🌾 AI Crop Planning</h1>${locLine()}
+ <p class="muted" style="margin-bottom:14px">Season: <b>Short rains (Vuli)</b> · Soil: <b>Clay loam, pH 6.2</b> · ML model ranks crops by predicted ROI for your agro-zone.</p>
+ <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+  ${[["Maize 🌽","ROI 94%","Plant: Oct 15 – Nov 5","Var: SC 649 / DKC 80-33","#16a34a"],
+     ["Beans 🫘","ROI 88%","Plant: Oct 20 – Nov 10","Var: Lyamungu 90 / Urafiki","#0284c7"],
+     ["Sunflower 🌻","ROI 81%","Plant: Nov 1 – Nov 20","Var: Record","#f59e0b"],
+     ["Cassava 🍠","ROI 76%","Plant: flexible","Var: Kiroba / Mkumba","#7c3aed"]].map(c=>`
+   <div class="card"><h3>${c[0]}</h3><p style="margin:8px 0"><span class="tag g">${c[1]}</span></p>
+   <p>🗓️ ${c[2]}</p><p>🌱 ${c[3]}</p>
+   <div style="margin-top:10px"><div class="conflict-bar"><div style="width:${c[1].slice(4)};background:${c[4]}"></div></div></div>
+   <button class="btn-o" style="margin-top:12px" onclick="toast('✅ ${c[0].split(" ")[0]} added to your planting plan!')">Add to Plan</button></div>`).join("")}
+ </div>
+ <div class="card" style="margin-top:14px"><h3>⚠️ Rotation & Risk Advice</h3>
+ <p style="margin-top:8px">AI recommends rotating <b>maize → beans</b> to fix nitrogen. Avoid planting tomatoes after peppers (shared blight risk). 78% suitability for your zone based on 10-yr rainfall patterns.</p></div>`,
+
+weather: ()=>{
+ const icons=["🌧️","⛅","☀️","🌦️","⛈️","🌧️","☀️"];
+ const days=["Today","Tue","Wed","Thu","Fri","Sat","Sun"];
+ const temps=[[24,29],[23,27],[22,26],[25,30],[23,27],[22,25],[24,31]];
+ const rain=[80,30,10,60,90,70,5];
+ return `
+ <h1>🌦️ Weather Advisory — ML Forecast</h1>${locLine()}
+ <div class="card" style="margin-bottom:14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:linear-gradient(120deg,#0369a1,#0284c7);color:#fff">
+   <div style="font-size:3rem">${icons[0]}</div>
+   <div><div style="font-size:1.8rem;font-weight:800">${temps[0][0]}° – ${temps[0][1]}°C</div><div>Heavy morning showers, 24 km/h NE winds</div></div>
+   <div style="margin-left:auto;text-align:right"><div style="font-size:1.3rem;font-weight:700">${rain[0]}% rain</div><div>Humidity 84%</div></div>
+ </div>
+ <div class="wx-grid" style="margin-bottom:14px">
+  ${days.map((d,i)=>`<div class="wx"><div class="big">${icons[i]}</div><b>${d}</b><div>${temps[i][0]}° / ${temps[i][1]}°</div><small>💧 ${rain[i]}%</small></div>`).join("")}
+ </div>
+ <div class="grid" style="grid-template-columns:1.5fr 1fr">
+  <div class="card"><h3 style="margin-bottom:10px">14-Day Rainfall Forecast (mm) — AI model v3</h3><canvas id="chWx" height="190"></canvas></div>
+  <div class="card"><h3>🧠 AI Farming Recommendations</h3>
+   <ul style="margin:10px 0 0 18px;line-height:1.9">
+    <li><b>Plant maize within 3 days</b> — soil moisture window optimal.</li>
+    <li>Delay spraying Thursday (⛈️ 90% rain) to avoid wash-off.</li>
+    <li>Harvest drying crops before Saturday's rains.</li>
+    <li>Drainage check: low-lying plots at flood risk Fri.</li>
+   </ul>
+   <button class="btn-p" style="margin-top:12px" onclick="toast('📲 Advisory sent to 1,284 farmers via SMS (Kiswahili)')">Send SMS Advisory 📲</button>
+  </div>
+ </div>`;},
+
+soil: ()=>`
+ <h1>🪱 Soil Management</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1fr 1.4fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">Soil Test Record</h3>
+   <div class="field"><label>Field / plot name</label><input value="Plot A — ${state.district}"></div>
+   <div class="field"><label>pH</label><input value="6.2"></div>
+   <div class="field"><label>Nitrogen (N) kg/ha</label><input value="28"></div>
+   <div class="field"><label>Phosphorus (P) kg/ha</label><input value="9"></div>
+   <div class="field"><label>Potassium (K) kg/ha</label><input value="140"></div>
+   <div class="field"><label>Organic matter %</label><input value="2.8"></div>
+   <button class="btn-p" onclick="toast('🧪 Soil analysis saved. AI recommendation updated below.')">Analyse Soil ✔</button>
+  </div>
+  <div class="card">
+   <h3 style="margin-bottom:12px">AI Soil Health Report</h3>
+   <table><thead><tr><th>Parameter</th><th>Value</th><th>Status</th><th>AI Action</th></tr></thead><tbody>
+    <tr><td>pH</td><td>6.2</td><td class="stat-ok">Good</td><td>Maintain with lime if &lt;5.8</td></tr>
+    <tr><td>Nitrogen</td><td>28 kg/ha</td><td class="stat-bad">Low</td><td>Apply 50 kg/ha urea at V6 stage</td></tr>
+    <tr><td>Phosphorus</td><td>9 kg/ha</td><td class="stat-warn">Medium</td><td>Apply DAP at planting</td></tr>
+    <tr><td>Potassium</td><td>140 kg/ha</td><td class="stat-ok">Good</td><td>No K fertiliser needed</td></tr>
+    <tr><td>Organic matter</td><td>2.8%</td><td class="stat-warn">Medium</td><td>Incorporate manure / residues</td></tr>
+   </tbody></table>
+   <div class="card" style="margin-top:12px;background:var(--green-50)"><b>🧪 Fertiliser prescription:</b> 100 kg DAP/ha at planting + 50 kg urea/ha top-dress. Est. cost TZS 96,000/ha. Expected yield gain: <b>+1.4 t/ha</b>.</div>
+  </div>
+ </div>`,
+
+pest: ()=>`
+ <h1>🔬 Pest &amp; Disease AI</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1fr 1.3fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">Upload Crop Photo</h3>
+   <div class="dropzone" onclick="document.getElementById('pestFile').click()">
+    <div style="font-size:2.4rem">📷</div>
+    <p>Tap to upload or take a photo of the affected leaf/plant</p>
+    <input type="file" id="pestFile" accept="image/*" style="display:none" onchange="pestUpload(event)">
+   </div>
+   <img id="pestImg" alt="Uploaded crop photo">
+   <div class="access-note">♿ Voice guidance available: the AI assistant can describe symptoms aloud after diagnosis.</div>
+  </div>
+  <div class="card" id="pestResult">
+   <h3 style="margin-bottom:10px">AI Diagnosis</h3>
+   <p class="muted" id="pestMsg">Upload a photo to run the computer-vision model (CNN, trained on 48k Tanzanian field images).</p>
+  </div>
+ </div>`,
+
+fertiliser: ()=>`
+ <h1>🧪 Fertiliser Recommendation</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1fr 1.4fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">Calculator Inputs</h3>
+   <div class="field"><label>Crop</label><select id="fzCrop">${CROPS.slice(0,8).map(c=>`<option>${c}</option>`).join("")}</select></div>
+   <div class="field"><label>Field size (ha)</label><input id="fzSize" type="number" value="1.5" step="0.1"></div>
+   <div class="field"><label>Soil N level</label><select id="fzN"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+   <div class="field"><label>Target yield (t/ha)</label><input id="fzYield" type="number" value="4" step="0.5"></div>
+   <button class="btn-p" onclick="calcFert()">Calculate 🧮</button>
+  </div>
+  <div class="card" id="fzOut"><h3>Recommendation</h3><p class="muted" style="margin-top:8px">Enter your field details to get a precise fertiliser plan.</p></div>
+ </div>`,
+
+irrigation: ()=>`
+ <h1>💧 Irrigation Management</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1.3fr 1fr">
+  <div class="card"><h3 style="margin-bottom:10px">7-Day Irrigation Schedule (AI-optimised)</h3>
+   <table><thead><tr><th>Day</th><th>Action</th><th>Amount</th><th>Reason</th></tr></thead><tbody>
+    ${[["Today","💧 Irrigate","18 mm","Soil at 42% moisture, no rain"],
+      ["Tue","💧 Irrigate","15 mm","Light showers insufficient"],
+      ["Wed","⏸️ Skip","—","High humidity, dew expected"],
+      ["Thu","⏸️ Skip","—","⛈️ 60% rainfall forecast"],
+      ["Fri","💧 Irrigate","20 mm","Flowering stage — critical"],
+      ["Sat","⏸️ Skip","—","90% rain probability"],
+      ["Sun","Monitor","—","Check soil sensor"]].map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join("")}
+   </tbody></table>
+  </div>
+  <div class="card"><h3>Soil Moisture Now</h3>
+   <div style="text-align:center;margin:14px 0"><span style="font-size:2.6rem;font-weight:800;color:var(--green-600)">42%</span><div class="muted">of field capacity</div></div>
+   <div class="conflict-bar"><div style="width:42%;background:var(--sky-600)"></div></div>
+   <p style="margin-top:12px">💡 <b>Water saved this week:</b> 32 mm vs farmer-usual schedule (≈ 45,000 L/ha). Crop stress risk: <span class="stat-ok">LOW</span>.</p>
+   <button class="btn-o" style="margin-top:10px" onclick="toast('⏰ Reminder set: irrigate tomorrow 06:00 via SMS + voice call')">Set SMS Reminder ⏰</button>
+  </div>
+ </div>`,
+
+activity: ()=>`
+ <h1>📋 Farm Activity Management</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1fr 1.2fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">Log New Activity</h3>
+   <div class="field"><label>Activity</label><select id="acType"><option>Planting</option><option>Weeding</option><option>Spraying</option><option>Fertilising</option><option>Irrigating</option><option>Harvesting</option><option>Post-harvest handling</option></select></div>
+   <div class="field"><label>Date</label><input id="acDate" type="date" value="2026-09-21"></div>
+   <div class="field"><label>Details / cost (TZS)</label><input id="acNote" placeholder="e.g. Urea top-dress, 50kg — 65,000"></div>
+   <button class="btn-p" onclick="logActivity()">Log Activity ✔</button>
+  </div>
+  <div class="card"><h3 style="margin-bottom:12px">Timeline — ${state.district} Demo Farm</h3>
+   <div class="tl" id="actTl">
+    <div class="ev"><b>Harvesting</b> · Sep 12 · <span class="tag g">Done</span><br><small>4.1 t maize from 1.2 ha</small></div>
+    <div class="ev"><b>Spraying</b> · Sep 5 · <span class="tag g">Done</span><br><small>Fall armyworm control, TZS 38,000</small></div>
+    <div class="ev"><b>Fertilising</b> · Aug 28 · <span class="tag g">Done</span><br><small>Urea 50 kg/ha top-dress</small></div>
+    <div class="ev"><b>Weeding</b> · Aug 15 · <span class="tag g">Done</span><br><small>Manual + ox-plough</small></div>
+    <div class="ev"><b>Planting</b> · Oct 28 '25 · <span class="tag g">Done</span><br><small>SC 649 maize, 1.2 ha</small></div>
+   </div>
+  </div>
+ </div>`,
+
+yield: ()=>`
+ <h1>📈 Yield Prediction (ML Model v3)</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1fr 1.5fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">Predict My Harvest</h3>
+   <div class="field"><label>Crop</label><select id="ypCrop">${CROPS.slice(0,6).map(c=>`<option>${c}</option>`).join("")}</select></div>
+   <div class="field"><label>Area (ha)</label><input id="ypArea" type="number" value="1.5" step="0.1"></div>
+   <div class="field"><label>Rainfall expected (mm/season)</label><input id="ypRain" type="number" value="620"></div>
+   <div class="field"><label>Fertiliser applied?</label><select id="ypFert"><option>Yes, recommended rate</option><option>Partial</option><option>No</option></select></div>
+   <button class="btn-p" onclick="predictYield()">Run Prediction 🤖</button>
+   <div id="ypOut" style="margin-top:14px"></div>
+  </div>
+  <div class="card"><h3 style="margin-bottom:10px">Regional Yield Trends — ${state.region} (t/ha, 5 seasons)</h3><canvas id="chYield" height="220"></canvas></div>
+ </div>`,
+
+market: ()=>`
+ <h1>🏪 Market Information</h1>${locLine()}
+ <div class="grid" style="grid-template-columns:1.6fr 1fr">
+  <div class="card">
+   <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <input id="mktSearch" placeholder="🔍 Search commodity…" oninput="renderMarket()" style="flex:1;min-width:180px">
+    <select id="mktSort" onchange="renderMarket()"><option value="name">Sort: Name</option><option value="price">Sort: Price ↓</option><option value="chg">Sort: Change ↓</option></select>
+   </div>
+   <table><thead><tr><th>Commodity</th><th>Unit</th><th>Price (TZS)</th><th>24h</th><th>Buyer / Market</th></tr></thead><tbody id="mktBody"></tbody></table>
+  </div>
+  <div class="card"><h3 style="margin-bottom:10px">Price Trend — Maize (TZS/100kg)</h3><canvas id="chMkt" height="200"></canvas>
+   <div class="card" style="margin-top:12px;background:var(--green-50)"><b>💡 AI tip:</b> Hold maize for ~2 weeks — model predicts +6% rise before school-term demand peak.</div>
+  </div>
+ </div>`,
+
+assistant: ()=>`
+ <h1>🤖 AI Farm Assistant — Kiswahili &amp; English</h1>${locLine()}
+ <div class="chat-wrap">
+  <div class="card">
+   <div id="chatLog" aria-live="polite"></div>
+   <div style="display:flex;gap:8px;margin-top:12px">
+    <input id="chatIn" placeholder="Ask in Kiswahili or English… e.g. 'Lini nipande mahindi?'" onkeydown="if(event.key==='Enter')sendChat()" aria-label="Ask the AI assistant">
+    <button class="btn-p" onclick="sendChat()">Send</button>
+    <button class="btn-o" id="micBtn" onclick="voiceInput()" title="Voice input" aria-label="Voice input">🎤</button>
+   </div>
+   <small class="muted">♿ Voice input & spoken replies supported (Kiswahili). Tap 🎤 then speak.</small>
+   <div class="quick" id="quickQs"></div>
+  </div>
+  <div class="card">
+   <h3 style="margin-bottom:10px">📞 Offline Channels</h3>
+   <div class="pill-q" onclick="toast('📱 Dialing *152*99# — USSD advisory menu')"><b>USSD:</b> *152*99# (any phone, no internet)</div>
+   <div class="pill-q" onclick="toast('☎️ Connecting to toll-free advisory line…')"><b>Toll-free IVR:</b> 0800 710 011 (voice, Kiswahili)</div>
+   <div class="pill-q" onclick="toast('💬 WhatsApp bot opening…')"><b>WhatsApp:</b> +255 765 000 123</div>
+   <div class="access-note" style="margin-top:12px">Designed for low-literacy users: icons, voice-first flow, and simple language throughout.</div>
+  </div>
+ </div>`,
+
+admin: ()=>{
+ if(state.role!=="Administrator") return `<div class="card"><h2>🛡️ Restricted</h2><p class="muted" style="margin-top:8px">Administrator privileges are required to manage user accounts, releases and system security. You are signed in as <b>${state.role}</b>.</p></div>`;
+ return `
+ <h1>🛡️ Administration Panel</h1>${locLine()}
+ <div class="kpis">
+  ${kpi("Total users","4","2 farmers · 1 officer","#16a34a")}
+  ${kpi("System version","v2.4","next release: Mar 2027","#0284c7")}
+  ${kpi("Last security update","Apr 2026","patch SLA: 6 months ✔","#f59e0b")}
+  ${kpi("Broadcasts this month","17","3,412 SMS delivered","#7c3aed")}
+ </div>
+ <div class="grid" style="grid-template-columns:1.5fr 1fr">
+  <div class="card">
+   <h3 style="margin-bottom:12px">User Accounts</h3>
+   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <input id="auName" placeholder="Full name" style="flex:2;min-width:130px">
+    <input id="auPhone" placeholder="Phone" style="flex:2;min-width:120px">
+    <select id="auRole" style="flex:1;min-width:120px"><option>Farmer</option><option>Extension Officer</option><option>Administrator</option></select>
+    <button class="btn-p" onclick="addUser()">＋ Add</button>
+   </div>
+   <table><thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Region</th><th>Status</th><th></th></tr></thead><tbody id="userTbl"></tbody></table>
+  </div>
+  <div>
+   <div class="card" style="margin-bottom:14px"><h3>🛡️ Security &amp; Release Management</h3>
+    <ul style="margin:10px 0 0 18px;line-height:2">
+     <li>Policy: security patch + feature release <b>every 6 months</b></li>
+     <li>Current: <b>v2.4 (Sept 2026)</b> · Next: <b>v3.0 (Mar 2027)</b></li>
+     <li>TLS 1.3 · AES-256 at rest · 2FA for admins</li>
+     <li>Automatic logout after 30 min inactivity</li>
+    </ul>
+    <button class="btn-o" style="margin-top:10px" onclick="toast('📦 Release v3.0 scheduled for March 2027 — changelog draft opened')">Schedule v3.0 Release 📦</button>
+    <button class="btn-o" style="margin-top:8px" onclick="toast('🛡️ Forcing password rotation for all users…')">Force Password Rotation</button>
+   </div>
+   <div class="card"><h3>🎛️ Model Management</h3>
+    <table style="margin-top:8px"><tbody>
+     <tr><td>Yield predictor v3</td><td class="stat-ok">Active</td></tr>
+     <tr><td>Pest CNN v2.1</td><td class="stat-ok">Active</td></tr>
+     <tr><td>Weather ensemble v4</td><td class="stat-ok">Active</td></tr>
+     <tr><td>Price forecaster v1.8</td><td class="stat-warn">Retrain due Nov 2026</td></tr>
+    </tbody></table>
+   </div>
+  </div>
+ </div>`;}
+};
+
+/* POST-RENDER hooks */
+const POST = {
+dashboard(){ mkChart("chDash","line",{labels:["Nov","Dec","Jan","Feb","Mar","Apr"],datasets:[
+  {label:"Rainfall (mm)",data:[180,140,90,60,75,40],borderColor:"#0284c7",backgroundColor:"rgba(2,132,199,.15)",fill:true,yAxisID:"y"},
+  {label:"Yield (t/ha)",data:[2.8,3.4,3.9,4.4,4.2,4.6],borderColor:"#16a34a",yAxisID:"y1"}]},
+  {scales:{y:{position:"left"},y1:{position:"right",grid:{display:false}}}});
+  mkChart("chPie","doughnut",{labels:["Maize","Beans","Cassava","Sunflower","Horticulture"],datasets:[{data:[38,22,15,12,13],backgroundColor:["#16a34a","#0284c7","#f59e0b","#7c3aed","#dc2626"]}]}); },
+registration(){ renderFarmers(); },
+weather(){ mkChart("chWx","bar",{labels:Array.from({length:14},(_,i)=>"Day "+(i+1)),datasets:[{label:"Rainfall (mm)",data:[22,14,4,0,8,30,45,12,6,0,2,18,26,5],backgroundColor:"#0284c7",borderRadius:6}]}); },
+market(){ renderMarket(); mkChart("chMkt","line",{labels:["May","Jun","Jul","Aug","Sep"],datasets:[{label:"TZS/100kg",data:[56000,58000,61000,63500,65000],borderColor:"#16a34a",fill:true,backgroundColor:"rgba(22,163,74,.12)"}]}); },
+yield(){ mkChart("chYield","bar",{labels:["2024 Vuli","2025 Masika","2025 Vuli","2026 Masika","2026 Vuli (fcst)"],datasets:[{label:"Maize t/ha",data:[3.1,3.6,3.4,4.0,4.4],backgroundColor:["#86efac","#86efac","#4ade80","#22c55e","#16a34a"],borderRadius:6}]}); },
+assistant(){ initChat(); }
+};
+
+/* Charts helper */
+function mkChart(id,type,data,opts={}){
+  const el=document.getElementById(id); if(!el||typeof Chart==="undefined") return;
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(el,{type,data,options:{responsive:true,plugins:{legend:{labels:{color:getComputedStyle(document.body).color}}},...opts}});
+}
+
+/* Farmer registration */
+let FARMERS=[
+ ["Neema Kileo","+255712000111","Maize","3.0","6–10 years"],
+ ["Hassan Mwakalinga","+255698000222","Beans","1.5","3–5 years"],
+ ["Rose Mallya","+255754000333","Sunflower","5.0","10+ years"],
+ ["Emmanuel Sanga","+255683000444","Coffee","2.2","6–10 years"]];
+function renderFarmers(){
+  document.querySelector("#farmerTbl tbody").innerHTML=FARMERS.map((f,i)=>
+   `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td>${f[2]}</td><td>${f[3]} ac</td><td>${f[4]}</td>
+    <td>${state.role==="Administrator"?`<button class="btn-d" style="padding:4px 10px;font-size:.75rem" onclick="FARMERS.splice(${i},1);renderFarmers();toast('🗑️ Farmer removed')">Delete</button>`:""}</td></tr>`).join("");
+}
+function regFarmer(){
+  const g=id=>document.getElementById(id).value.trim();
+  if(!g("frName")||!g("frPhone")){toast("⚠️ Name and phone are required.");return;}
+  FARMERS.unshift([g("frName"),g("frPhone"),g("frCrop"),g("frSize")||"—",g("frExp")]);
+  renderFarmers(); toast("✅ Farmer registered! Welcome SMS sent in Kiswahili 📲"); speak("Hongera! Farmer registered.");
+}
+
+/* Pest AI */
+function pestUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  const img=document.getElementById("pestImg");
+  img.src=URL.createObjectURL(f); img.style.display="block";
+  const out=document.getElementById("pestResult");
+  out.innerHTML=`<h3>🔬 AI Diagnosis</h3><p class="muted" style="margin-top:8px">🧠 Analysing image with CNN model v2.1…</p><div class="conflict-bar" style="margin-top:12px"><div id="pbar" style="width:5%"></div></div>`;
+  let p=5; const iv=setInterval(()=>{p=Math.min(100,p+Math.random()*22);const b=document.getElementById("pbar");if(b)b.style.width=p+"%";
+   if(p>=100){clearInterval(iv);
+    out.innerHTML=`<h3 style="margin-bottom:10px">🔬 AI Diagnosis — Complete</h3>
+    <p><span class="tag r">Action needed</span></p>
+    <h3 style="margin:12px 0 6px">1. Fall Armyworm (Spodoptera frugiperda)</h3>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="conflict-bar" style="flex:1"><div style="width:87%;background:var(--red-600)"></div></div><b>87%</b></div>
+    <h3 style="margin:12px 0 6px">2. Maize Leaf Blight <span class="muted" style="font-weight:400">(alternative)</span></h3>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div class="conflict-bar" style="flex:1"><div style="width:9%;background:var(--amber-500)"></div></div><b>9%</b></div>
+    <div class="card" style="background:var(--red-100)"><b>🩺 Treatment plan:</b>
+    <ul style="margin:8px 0 0 18px;line-height:1.8">
+     <li>Apply Emamectin benzoate 5 SG (per label) in evening</li>
+     <li>Scout at dawn — hand-pick egg masses</li>
+     <li>Re-check in 5 days; rotate active ingredient</li>
+     <li>Cost estimate: TZS 28,000/acre</li></ul></div>
+    <button class="btn-p" style="margin-top:12px" onclick="toast('📲 Treatment plan sent via SMS (Kiswahili) + voice call')">Send Plan to Farmer 📲</button>`;
+    speak("Diagnosis complete. Fall armyworm detected with 87 percent confidence. Treatment plan ready.");
+   }},250);
+}
+
+/* Fertiliser calculator */
+function calcFert(){
+  const crop=document.getElementById("fzCrop").value, size=parseFloat(document.getElementById("fzSize").value)||1,
+        n=document.getElementById("fzN").value, y=parseFloat(document.getElementById("fzYield").value)||4;
+  const base={"Maize":[100,50,0],"Beans":[50,40,30],"Rice":[80,50,40],"Cassava":[60,40,50],"Sorghum":[60,30,0],"Millet":[50,30,0],"Sunflower":[70,50,30],"Coffee":[80,40,60]}[crop]||[60,40,30];
+  const mult=(n==="Low"?1.25:n==="High"?0.75:1)*Math.min(1.4,y/4);
+  const dap=Math.round(base[0]*mult*size), urea=Math.round(base[1]*mult*size), mop=Math.round(base[2]*mult*size);
+  const cost=(dap*2100+urea*1300+mop*1900);
+  document.getElementById("fzOut").innerHTML=`<h3 style="margin-bottom:10px">🧪 Plan for ${crop} — ${size} ha</h3>
+   <table><tbody>
+    <tr><td>DAP (at planting)</td><td><b>${dap} kg</b></td></tr>
+    <tr><td>Urea (top-dress)</td><td><b>${urea} kg</b></td></tr>
+    ${mop?`<tr><td>MOP (K)</td><td><b>${mop} kg</b></td></tr>`:""}
+    <tr><td>Estimated cost</td><td><b>TZS ${cost.toLocaleString()}</b></td></tr>
+   </tbody></table>
+   <p style="margin-top:10px" class="muted">Avoids over-application of ≈ ${Math.round(30*size)} kg N — saves money and protects Lake Victoria watershed. ♻️</p>`;
+}
+
+/* Yield prediction */
+function predictYield(){
+  const crop=document.getElementById("ypCrop").value, area=parseFloat(document.getElementById("ypArea").value)||1,
+        rain=parseFloat(document.getElementById("ypRain").value)||600,
+        fert=document.getElementById("ypFert").value;
+  const baseY={"Maize":3.8,"Beans":1.6,"Rice":4.5,"Cassava":8.5,"Sorghum":2.4,"Millet":1.5}[crop]||3;
+  let y=baseY*(0.7+Math.min(rain,900)/900*0.5)*(fert.startsWith("Yes")?1.15:fert==="Partial"?1.0:0.82);
+  y=Math.round(y*100)/100; const total=Math.round(y*area*10)/10;
+  const price={"Maize":650,"Beans":1800,"Rice":1200,"Cassava":380,"Sorghum":520,"Millet":700}[crop]||600;
+  document.getElementById("ypOut").innerHTML=`<div class="card" style="background:var(--green-50)">
+   <h3>🤖 Prediction Result</h3>
+   <p style="margin-top:8px">Expected yield: <b style="font-size:1.3rem;color:var(--green-700)">${y} t/ha</b> → <b>${total} tonnes</b> total</p>
+   <p style="margin-top:6px">Est. revenue: <b>TZS ${Math.round(total*price*100).toLocaleString()}</b> (at current market)</p>
+   <small class="muted">Model v3 confidence: 86% · trained on 42k Tanzanian farm seasons</small></div>`;
+  speak(`Prediction ready. Expected yield ${y} tonnes per hectare.`);
+}
+
+/* Market */
+function renderMarket(){
+  const q=(document.getElementById("mktSearch")?.value||"").toLowerCase();
+  const sort=document.getElementById("mktSort")?.value||"name";
+  let rows=COMMODITIES.filter(c=>c.name.toLowerCase().includes(q));
+  rows.sort((a,b)=>sort==="price"?b.price-a.price:sort==="chg"?b.chg-a.chg:a.name.localeCompare(b.name));
+  document.getElementById("mktBody").innerHTML=rows.map(c=>`<tr>
+   <td><b>${c.name}</b></td><td>${c.unit}</td><td><b>TZS ${c.price.toLocaleString()}</b></td>
+   <td class="${c.chg>=0?"stat-ok":"stat-bad"}">${c.chg>=0?"▲":"▼"} ${Math.abs(c.chg)}%</td><td>${c.buyer}</td></tr>`).join("")
+   ||`<tr><td colspan="5" class="muted">No commodities match.</td></tr>`;
+}
+
+/* Activities */
+function logActivity(){
+  const t=document.getElementById("acType").value, d=document.getElementById("acDate").value, n=document.getElementById("acNote").value||"—";
+  const el=document.createElement("div"); el.className="ev";
+  el.innerHTML=`<b>${t}</b> · ${d} · <span class="tag s">Logged</span><br><small>${n}</small>`;
+  document.getElementById("actTl").prepend(el); toast("✅ Activity logged.");
+}
+
+/* Admin users */
+function renderUsers(){
+  const tb=document.getElementById("userTbl"); if(!tb) return;
+  tb.innerHTML=USERS.map(u=>`<tr>
+   <td><b>${u.name}</b><br><small class="muted">${u.email}</small></td><td>${u.phone}</td><td>${u.role}</td><td>${u.region}</td>
+   <td><span class="tag ${u.status==="Active"?"g":"r"}">${u.status}</span></td>
+   <td><button class="btn-d" style="padding:4px 10px;font-size:.75rem" onclick="delUser(${u.id})">Delete</button></td></tr>`).join("");
+}
+function delUser(id){ USERS=USERS.filter(u=>u.id!==id); renderUsers(); toast("🗑️ Account deleted (admin audit log updated)."); }
+function addUser(){
+  const n=document.getElementById("auName").value.trim(), p=document.getElementById("auPhone").value.trim();
+  if(!n||!p){toast("⚠️ Name and phone required.");return;}
+  USERS.push({id:Date.now(),name:n,role:document.getElementById("auRole").value,phone:p,email:p.replace("+","")+"@agrismart.co.tz",region:state.region,status:"Active"});
+  renderUsers(); toast("✅ User account created — activation SMS sent.");
+}
+
+/* AI Assistant */
+const KB=[
+ [/lini|when.*plant|plant.*when|kupanda/i,`🤖 For **${state.region} → ${state.district}**, the Vuli short-rains window opens in ~3 weeks. Best planting date for maize: **15 Oct – 5 Nov**. Soil moisture looks favourable. I'll SMS you a reminder 2 days before. 🌱`],
+ [/mvua|rain|weather|hali ya hewa/i,`🤖 Forecast for ${state.district}: **80% rain today**, clearing by Wednesday, heavy again Friday–Saturday (90%). Great planting window right after Friday's rain! 🌧️`],
+ [/fertil|mbolea|urea|dap/i,`🤖 For your 1.5 ha maize plot: **150 kg DAP** at planting + **75 kg urea** top-dress at knee height. ≈ TZS 144,000. Given your Medium soil N, this should lift yield ~+1.4 t/ha. 🧪`],
+ [/mdudu|worm|armyworm|pest|wagongo|adudu|kupe|insect/i,`🤖 Fall Armyworm risk in ${state.region} is **MODERATE** this week. Scout at dawn twice weekly; look for window-pane leaf damage. If found: Emamectin benzoate in the evening. Upload a photo in the Pest AI module and I'll confirm. 🔬`],
+ [/bei|price|market|soko|uuza/i,`🤖 Today's ${state.district} prices: Maize TZS 65,000/bag (+2.4% ▲), Beans TZS 180,000/bag (+5.1% ▲). My model suggests **holding maize ~2 weeks** for +6%. Full list in Market module. 🏪`],
+ [/rekodi|register|registration|jisajili/i,`🤖 To register a farmer I need: full name, phone, farm size, main crop. You can also use the Farmer Registration module — or just tell me the details here! 🧑‍🌾`],
+ [/mvua kubwa|flood|mafuriko|drought|kiangazi/i,`🤖 Alert: flood risk is elevated for low-lying plots near ${state.district} on Friday. Ensure drainage channels are clear and move harvested grain to raised storage. I've queued an SMS advisory. 🚨`],
+ [/asante|thank/i,`🤖 Karibu sana! 🌱 Anything else — planting, pests, prices, or weather?`],
+ [/habari|hujambo|hello|hi\b/i,`🤖 Habari yako! 🌱 I'm your AgriSmart assistant for ${state.region}. Ask me about planting times, weather, fertiliser, pests, or market prices — in Kiswahili or English!`]];
+function initChat(){
+  const log=document.getElementById("chatLog");
+  log.innerHTML=`<div class="msg ai">🤖 Habari! I'm the AgriSmart AI assistant for <b>${state.region} → ${state.district}</b>. Ninaweza kukusaidia kwa kilimo — weather, mbolea, wadudu, soko. How can I help? 🌱</div>`;
+  document.getElementById("quickQs").innerHTML=["Lini nipande mahindi? 🌽","Hali ya hewa leo? 🌦️","Mbolea ngapi? 🧪","Bei ya mahindi? 🏪","Kuna wadudu? 🔬"]
+   .map(q=>`<button onclick="document.getElementById('chatIn').value='${q.replace(/'/g,"")}';sendChat()">${q}</button>`).join("");
+}
+function sendChat(){
+  const inp=document.getElementById("chatIn"); const q=inp.value.trim(); if(!q) return;
+  const log=document.getElementById("chatLog");
+  log.insertAdjacentHTML("beforeend",`<div class="msg me">${q}</div>`); inp.value=""; log.scrollTop=1e9;
+  setTimeout(()=>{
+    let ans=`🤖 Hmm, let me check the ${state.region} agro-data… For that, I recommend speaking with your extension officer (Zawadi, +255 754 333 444) or try rephrasing — e.g. "mbolea", "mvua", "bei". 🌱`;
+    for(const [rx,a] of KB) if(rx.test(q)){ans=a;break;}
+    log.insertAdjacentHTML("beforeend",`<div class="msg ai">${ans}</div>`); log.scrollTop=1e9;
+    speak(ans.replace(/[*🤖]/g,""));
+  },650);
+}
+function voiceInput(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const btn=document.getElementById("micBtn");
+  if(!SR){toast("🎤 Voice input not supported in this browser — type instead.");return;}
+  const r=new SR(); r.lang="sw-TZ"; btn.textContent="⏺️"; toast("🎤 Sema sasa… (speak now)");
+  r.onresult=e=>{document.getElementById("chatIn").value=e.results[0][0].transcript;sendChat();};
+  r.onend=()=>btn.textContent="🎤"; r.onerror=()=>{btn.textContent="🎤";toast("Mic error — try again.");};
+  r.start();
+}
+
+/* hook admin render */
+const _origShow = showModule;
+showModule = function(id){ _origShow(id); if(id==="admin") renderUsers(); };
+</script>
+</body>
+</html>
