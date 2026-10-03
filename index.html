@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgriSmart Tanzania — AI-Powered Smart Agriculture Platform</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --green-900:#14532d; --green-700:#166534; --green-600:#16a34a; --green-500:#22c55e;
@@ -96,20 +97,104 @@ canvas{max-width:100%}
 <base target="_blank">
 </head>
 <body>
-
 <!-- ================= LOGIN ================= -->
 <div id="login">
   <div class="login-box">
+
     <h1>🌱 AgriSmart Tanzania</h1>
-    <p class="muted" style="margin:6px 0 16px">AI-Powered Smart Agriculture Management &amp; Advisory System</p>
-    <div class="field"><label>Email / Phone</label><input id="liUser" value="admin@agrismart.co.tz"></div>
-    <div class="field"><label>Password</label><input id="liPass" type="password" value="agri2026"></div>
-    <div class="field"><label>Role</label>
-      <select id="liRole"><option>Administrator</option><option>Extension Officer</option><option>Farmer</option></select>
+
+    <p class="muted" style="margin:6px 0 16px">
+      AI-Powered Smart Agriculture Management &amp; Advisory System
+    </p>
+
+    <!-- LOGIN / REGISTRATION MESSAGE -->
+    <div
+      id="authMessage"
+      style="display:none;margin-bottom:15px;padding:10px;border-radius:8px;font-size:.9rem"
+    ></div>
+
+    <!-- EMAIL -->
+    <div class="field">
+      <label for="liUser">Email</label>
+
+      <input
+        id="liUser"
+        type="email"
+        autocomplete="email"
+        placeholder="Enter your email"
+        required
+      >
     </div>
-    <button class="btn-p" style="width:100%" onclick="doLogin()">Sign In ➜</button>
-    <div class="demo">🧪 <b>Demo access</b> — any email + password works.<br>Admin role unlocks user management &amp; broadcast privileges.</div>
-    <div class="access-note">♿ This platform supports screen-reader labels, high-contrast mode, adjustable text size, and voice interaction.</div>
+
+    <!-- PASSWORD -->
+    <div class="field">
+      <label for="liPass">Password</label>
+
+      <input
+        id="liPass"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Enter your password"
+        required
+      >
+    </div>
+
+    <!-- LOGIN BUTTON -->
+    <button
+      class="btn-p"
+      id="loginButton"
+      style="width:100%"
+      onclick="handleLogin()"
+    >
+      Sign In ➜
+    </button>
+
+    <!-- REGISTER BUTTON -->
+    <button
+      class="btn-p"
+      id="registerButton"
+      style="width:100%;margin-top:10px;background:#166534"
+      onclick="handleRegister()"
+    >
+      Create Account
+    </button>
+
+    <!-- LOGOUT BUTTON -->
+    <button
+      class="btn-p"
+      id="logoutButton"
+      style="width:100%;margin-top:10px;display:none;background:#991b1b"
+      onclick="handleLogout()"
+    >
+      Sign Out
+    </button>
+
+    <!-- PASSWORD RESET -->
+    <div style="text-align:center;margin-top:14px">
+      <button
+        type="button"
+        onclick="handlePasswordReset()"
+        style="border:none;background:none;color:#166534;cursor:pointer"
+      >
+        Forgot Password?
+      </button>
+    </div>
+
+    <div
+      class="demo"
+      style="margin-top:16px"
+    >
+      🔐 <b>Secure authentication</b> —
+      AgriSmart Tanzania uses Supabase Authentication.
+      Your password is handled by Supabase and is not stored in the AgriSmart frontend.
+    </div>
+
+    <div class="access-note">
+      ♿ This platform supports screen-reader labels,
+      high-contrast mode, adjustable text size,
+      and voice interaction.
+    </div>
+
   </div>
 </div>
 
@@ -165,6 +250,605 @@ canvas{max-width:100%}
 </div>
 
 <script>
+// =====================================
+// SUPABASE AUTHENTICATION
+// =====================================
+
+const SUPABASE_URL =
+    'https://gkwpqxivntbpmgusejhk.supabase.co';
+
+const SUPABASE_ANON_KEY =
+    'sb_publishable_oVFlm1QJZTcWbkNoVJSGGQ_Iqj1njM7';
+
+const supabaseClient =
+    window.supabase.createClient(
+        'https://gkwpqxivntbpmgusejhk.supabase.co',
+        'sb_publishable_oVFlm1QJZTcWbkNoVJSGGQ_Iqj1njM7'
+    );
+// =====================================
+// USER REGISTRATION
+// =====================================
+
+async function registerUser(email, password) {
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            console.error(
+                'Registration failed:',
+                error
+            );
+
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+
+        console.log(
+            'Registration successful:',
+            data
+        );
+
+        return {
+            success: true,
+            message:
+                'Registration successful. Check your email if confirmation is required.',
+            data: data
+        };
+
+    } catch (error) {
+
+        console.error(
+            'Registration error:',
+            error
+        );
+
+        return {
+            success: false,
+            message:
+                'Unable to complete registration.'
+        };
+    }
+}
+
+// =====================================
+// USER LOGIN
+// =====================================
+
+async function loginUser(email, password) {
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            console.error(
+                'Login failed:',
+                error
+            );
+
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+
+        console.log(
+            'Login successful:',
+            data
+        );
+
+        return {
+            success: true,
+            message: 'Login successful',
+            data: data
+        };
+
+    } catch (error) {
+
+        console.error(
+            'Login error:',
+            error
+        );
+
+        return {
+            success: false,
+            message:
+                'Unable to complete login.'
+        };
+    }
+}
+
+// =====================================
+// USER LOGOUT
+// =====================================
+
+async function logoutUser() {
+    try {
+
+        const {
+            error
+        } = await supabaseClient.auth.signOut();
+
+        if (error) {
+            console.error(
+                'Logout failed:',
+                error
+            );
+
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+
+        console.log(
+            'Logout successful'
+        );
+
+        return {
+            success: true,
+            message: 'Logout successful'
+        };
+
+    } catch (error) {
+
+        console.error(
+            'Logout error:',
+            error
+        );
+
+        return {
+            success: false,
+            message:
+                'Unable to complete logout.'
+        };
+    }
+}
+
+// =====================================
+// DISPLAY AUTH MESSAGE
+// =====================================
+
+function showAuthMessage(message, type = 'error') {
+
+    const messageBox =
+        document.getElementById('authMessage');
+
+    if (!messageBox) {
+        return;
+    }
+
+    messageBox.textContent = message;
+
+    messageBox.style.display = 'block';
+
+    if (type === 'success') {
+
+        messageBox.style.background = '#dcfce7';
+        messageBox.style.color = '#166534';
+
+    } else {
+
+        messageBox.style.background = '#fee2e2';
+        messageBox.style.color = '#991b1b';
+
+    }
+}
+
+
+// =====================================
+// HIDE AUTH MESSAGE
+// =====================================
+
+function hideAuthMessage() {
+
+    const messageBox =
+        document.getElementById('authMessage');
+
+    if (messageBox) {
+        messageBox.style.display = 'none';
+    }
+}
+
+
+// =====================================
+// HANDLE LOGIN
+// =====================================
+
+async function handleLogin() {
+
+    hideAuthMessage();
+
+    const email =
+        document.getElementById('liUser').value.trim();
+
+    const password =
+        document.getElementById('liPass').value;
+
+    // Validate email
+    if (!email) {
+
+        showAuthMessage(
+            'Please enter your email address.'
+        );
+
+        return;
+    }
+
+    // Validate password
+    if (!password) {
+
+        showAuthMessage(
+            'Please enter your password.'
+        );
+
+        return;
+    }
+
+    const loginButton =
+        document.getElementById('loginButton');
+
+    loginButton.disabled = true;
+    loginButton.textContent = 'Signing in...';
+
+    try {
+
+        const result =
+            await loginUser(
+                email,
+                password
+            );
+
+        if (!result.success) {
+
+            showAuthMessage(
+                result.message || 'Login failed.'
+            );
+
+            return;
+        }
+
+        // =====================================
+        // GET SUPABASE SESSION
+        // =====================================
+
+        const {
+            data: sessionData,
+            error: sessionError
+        } =
+            await supabaseClient.auth.getSession();
+
+        if (sessionError || !sessionData.session) {
+
+            showAuthMessage(
+                'Login succeeded, but no authentication session was created.'
+            );
+
+            return;
+        }
+
+        const accessToken =
+            sessionData.session.access_token;
+
+        console.log(
+            'Supabase access token received.'
+        );
+
+        // =====================================
+        // VERIFY TOKEN WITH BACKEND
+        // =====================================
+
+        const response =
+            await fetch(
+                'https://repository-name-agrismart-tanzania.onrender.com/api/auth/me',
+                {
+                    method: 'GET',
+
+                    headers: {
+                        'Authorization':
+                            `Bearer ${accessToken}`,
+
+                        'Content-Type':
+                            'application/json'
+                    }
+                }
+            );
+
+        const backendResult =
+            await response.json();
+
+        console.log(
+            'Backend authentication result:',
+            backendResult
+        );
+
+        if (!response.ok || !backendResult.success) {
+
+            showAuthMessage(
+                backendResult.message ||
+                'Backend authentication failed.'
+            );
+
+            return;
+        }
+
+        // =====================================
+        // LOGIN SUCCESSFUL
+        // =====================================
+
+        showAuthMessage(
+            'Login successful. Welcome to AgriSmart Tanzania.',
+            'success'
+        );
+
+        console.log(
+            'Authenticated user:',
+            backendResult.user
+        );
+
+        // Hide login screen
+        const loginScreen =
+            document.getElementById('login');
+
+        if (loginScreen) {
+            loginScreen.style.display = 'none';
+        }
+
+        // Show logout button
+        const logoutButton =
+            document.getElementById('logoutButton');
+
+        if (logoutButton) {
+            logoutButton.style.display = 'block';
+        }
+
+    } catch (error) {
+
+        console.error(
+            'Login process error:',
+            error
+        );
+
+        showAuthMessage(
+            'Unable to complete login. Please try again.'
+        );
+
+    } finally {
+
+        loginButton.disabled = false;
+        loginButton.textContent = 'Sign In ➜';
+
+    }
+}
+
+
+// =====================================
+// HANDLE REGISTRATION
+// =====================================
+
+async function handleRegister() {
+
+    hideAuthMessage();
+
+    const email =
+        document.getElementById('liUser').value.trim();
+
+    const password =
+        document.getElementById('liPass').value;
+
+    if (!email) {
+
+        showAuthMessage(
+            'Please enter your email address.'
+        );
+
+        return;
+    }
+
+    if (!password) {
+
+        showAuthMessage(
+            'Please enter a password.'
+        );
+
+        return;
+    }
+
+    if (password.length < 6) {
+
+        showAuthMessage(
+            'Password must contain at least 6 characters.'
+        );
+
+        return;
+    }
+
+    const registerButton =
+        document.getElementById('registerButton');
+
+    registerButton.disabled = true;
+    registerButton.textContent =
+        'Creating account...';
+
+    try {
+
+        const result =
+            await registerUser(
+                email,
+                password
+            );
+
+        if (!result.success) {
+
+            showAuthMessage(
+                result.message ||
+                'Registration failed.'
+            );
+
+            return;
+        }
+
+        showAuthMessage(
+            result.message ||
+            'Registration successful.',
+            'success'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Registration process error:',
+            error
+        );
+
+        showAuthMessage(
+            'Unable to complete registration.'
+        );
+
+    } finally {
+
+        registerButton.disabled = false;
+        registerButton.textContent =
+            'Create Account';
+
+    }
+}
+
+
+// =====================================
+// HANDLE LOGOUT
+// =====================================
+
+async function handleLogout() {
+
+    try {
+
+        const result =
+            await logoutUser();
+
+        if (!result.success) {
+
+            showAuthMessage(
+                result.message ||
+                'Logout failed.'
+            );
+
+            return;
+        }
+
+        // Show login screen
+        const loginScreen =
+            document.getElementById('login');
+
+        if (loginScreen) {
+            loginScreen.style.display = 'flex';
+        }
+
+        // Hide logout button
+        const logoutButton =
+            document.getElementById('logoutButton');
+
+        if (logoutButton) {
+            logoutButton.style.display = 'none';
+        }
+
+        // Clear login fields
+        document.getElementById('liUser').value = '';
+        document.getElementById('liPass').value = '';
+
+        showAuthMessage(
+            'You have been signed out.',
+            'success'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Logout process error:',
+            error
+        );
+
+        showAuthMessage(
+            'Unable to complete logout.'
+        );
+    }
+}
+
+
+// =====================================
+// HANDLE PASSWORD RESET
+// =====================================
+
+async function handlePasswordReset() {
+
+    hideAuthMessage();
+
+    const email =
+        document.getElementById('liUser').value.trim();
+
+    if (!email) {
+
+        showAuthMessage(
+            'Enter your email address first, then click Forgot Password.'
+        );
+
+        return;
+    }
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient.auth.resetPasswordForEmail(
+                email,
+                {
+                    redirectTo:
+                        window.location.origin
+                }
+            );
+
+        if (error) {
+
+            showAuthMessage(
+                error.message
+            );
+
+            return;
+        }
+
+        showAuthMessage(
+            'Password reset instructions have been sent to your email.',
+            'success'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Password reset error:',
+            error
+        );
+
+        showAuthMessage(
+            'Unable to send password reset instructions.'
+        );
+    }
+}
+
 // =====================================
 // AGRISMART BACKEND API
 // =====================================
@@ -838,6 +1522,116 @@ function voiceInput(){
 /* hook admin render */
 const _origShow = showModule;
 showModule = function(id){ _origShow(id); if(id==="admin") renderUsers(); };
+
+
+// =====================================
+// AUTH SESSION MANAGEMENT
+// =====================================
+
+async function initializeAuthSession() {
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient.auth.getSession();
+
+        if (error) {
+
+            console.error(
+                'Session check failed:',
+                error
+            );
+
+            return;
+        }
+
+        const session = data.session;
+
+        if (session) {
+
+            console.log(
+                'Existing Supabase session found.'
+            );
+
+            const loginScreen =
+                document.getElementById('login');
+
+            if (loginScreen) {
+                loginScreen.style.display = 'none';
+            }
+
+            return;
+        }
+
+        console.log(
+            'No active Supabase session.'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Session initialization error:',
+            error
+        );
+    }
+}
+
+
+// =====================================
+// AUTH STATE CHANGE LISTENER
+// =====================================
+
+supabaseClient.auth.onAuthStateChange(
+    (event, session) => {
+
+        console.log(
+            'Supabase authentication event:',
+            event
+        );
+
+        if (event === 'SIGNED_OUT') {
+
+            const loginScreen =
+                document.getElementById('login');
+
+            if (loginScreen) {
+                loginScreen.style.display = 'flex';
+            }
+
+            return;
+        }
+
+        if (
+            event === 'SIGNED_IN' &&
+            session
+        ) {
+
+            const loginScreen =
+                document.getElementById('login');
+
+            if (loginScreen) {
+                loginScreen.style.display = 'none';
+            }
+        }
+    }
+);
+
+
+// =====================================
+// INITIALIZE AUTHENTICATION
+// =====================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+        initializeAuthSession();
+
+    }
+);
+
 </script>
 </body>
 </html>
