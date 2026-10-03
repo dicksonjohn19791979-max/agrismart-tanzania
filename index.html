@@ -1547,30 +1547,53 @@ async function initializeAuthSession() {
             return;
         }
 
-        const session = data.session;
+        const session =
+            data.session;
 
-     if (session) {
+        if (session) {
 
-    console.log(
-        'Existing Supabase session found.'
-    );
+            console.log(
+                'Existing Supabase session found.'
+            );
 
-    const loginScreen =
-        document.getElementById('login');
+            const loginScreen =
+                document.getElementById('login');
 
-    if (loginScreen) {
-        loginScreen.style.display = 'none';
+            if (loginScreen) {
+                loginScreen.style.display = 'none';
+            }
+
+            const app =
+                document.getElementById('app');
+
+            if (app) {
+                app.style.display = 'block';
+            }
+
+            const logoutButton =
+                document.getElementById('logoutButton');
+
+            if (logoutButton) {
+                logoutButton.style.display = 'block';
+            }
+
+            return;
+        }
+
+        console.log(
+            'No active Supabase session.'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Session initialization error:',
+            error
+        );
     }
 
-    const app =
-        document.getElementById('app');
-
-    if (app) {
-        app.style.display = 'block';
-    }
-
-    return;
 }
+
 
 // =====================================
 // AUTH STATE CHANGE LISTENER
@@ -1593,6 +1616,20 @@ supabaseClient.auth.onAuthStateChange(
                 loginScreen.style.display = 'flex';
             }
 
+            const app =
+                document.getElementById('app');
+
+            if (app) {
+                app.style.display = 'none';
+            }
+
+            const logoutButton =
+                document.getElementById('logoutButton');
+
+            if (logoutButton) {
+                logoutButton.style.display = 'none';
+            }
+
             return;
         }
 
@@ -1607,21 +1644,33 @@ supabaseClient.auth.onAuthStateChange(
             if (loginScreen) {
                 loginScreen.style.display = 'none';
             }
+
+            const app =
+                document.getElementById('app');
+
+            if (app) {
+                app.style.display = 'block';
+            }
+
+            const logoutButton =
+                document.getElementById('logoutButton');
+
+            if (logoutButton) {
+                logoutButton.style.display = 'block';
+            }
         }
     }
 );
 
 
 // =====================================
-// INITIALIZE AUTHENTICATION
+// START AUTH SESSION CHECK
 // =====================================
 
 document.addEventListener(
     'DOMContentLoaded',
     () => {
-
         initializeAuthSession();
-
     }
 );
 
