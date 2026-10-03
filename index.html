@@ -1549,35 +1549,28 @@ async function initializeAuthSession() {
 
         const session = data.session;
 
-        if (session) {
+     if (session) {
 
-            console.log(
-                'Existing Supabase session found.'
-            );
+    console.log(
+        'Existing Supabase session found.'
+    );
 
-            const loginScreen =
-                document.getElementById('login');
+    const loginScreen =
+        document.getElementById('login');
 
-            if (loginScreen) {
-                loginScreen.style.display = 'none';
-            }
-
-            return;
-        }
-
-        console.log(
-            'No active Supabase session.'
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Session initialization error:',
-            error
-        );
+    if (loginScreen) {
+        loginScreen.style.display = 'none';
     }
-}
 
+    const app =
+        document.getElementById('app');
+
+    if (app) {
+        app.style.display = 'block';
+    }
+
+    return;
+}
 
 // =====================================
 // AUTH STATE CHANGE LISTENER
