@@ -184,7 +184,7 @@ canvas{max-width:100%}
       class="demo"
       style="margin-top:16px"
     >
-      🔐 <b>Secure authentication</b> —
+      🔒 <b>Secure authentication</b> —
       AgriSmart Tanzania uses Supabase Authentication.
       Your password is handled by Supabase and is not stored in the AgriSmart frontend.
     </div>
@@ -203,17 +203,17 @@ canvas{max-width:100%}
   <div class="topbar">
     <div class="logo">🌱 AgriSmart <span style="font-weight:400;opacity:.8">Tanzania</span></div>
     <div class="loc">
-      <span style="font-size:.85rem">📍</span>
+      <span style="font-size:.85rem">📄</span>
       <select id="selRegion" aria-label="Select region" onchange="regionChanged()"></select>
       <select id="selDistrict" aria-label="Select district"></select>
     </div>
     <div class="a11y">
-      <button onclick="toggleContrast()" title="Toggle high contrast" aria-label="Toggle high contrast mode">◐ Contrast</button>
+      <button onclick="toggleContrast()" title="Toggle high contrast" aria-label="Toggle high contrast mode">◐ Contrast</button>
       <button onclick="fontSize(1)" title="Increase text size">A+</button>
       <button onclick="fontSize(-1)" title="Decrease text size">A−</button>
       <button id="ttsBtn" onclick="toggleTTS()" title="Read page aloud" aria-label="Text to speech">🔊 Read</button>
       <button id="roleBadge" class="btn-o" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)" onclick="showBroadcast()">📢 Broadcast</button>
-      <button onclick="logout()" style="background:rgba(220,38,38,.85);color:#fff">Logout</button>
+      <button onclick="handleLogout()" style="background:rgba(220,38,38,.85);color:#fff">Logout</button>
     </div>
   </div>
 
@@ -221,7 +221,7 @@ canvas{max-width:100%}
     <nav class="sidebar" id="sideNav" aria-label="Main modules"></nav>
     <main class="main">
       <div id="updateBanner">
-        <span>🛡️ <b>Security &amp; Release Cycle:</b> Version 2.4 (Sept 2026) — next scheduled security update &amp; feature release: <b>March 2027</b> (every 6 months, automatic).</span>
+        <span>🛡️ <b>Security &amp; Release Cycle:</b> Version 2.4 (Sept 2026) — next scheduled security update &amp; feature release: <b>March 2027</b> (every 6 months, automatic).</span>
         <button class="btn-o" style="margin-left:auto;font-size:.78rem" onclick="alert('Changelog v2.4:\n• Improved Kiswahili voice assistant\n• New ML yield model v3 (MAE ↓ 12%)\n• Offline SMS advisory sync\n• Security patch: TLS 1.3 enforced')">View release notes</button>
       </div>
       <div id="viewRoot"></div>
@@ -376,6 +376,44 @@ async function loginUser(email, password) {
 // USER LOGOUT
 // =====================================
 
+async function handleLogout() {
+    console.log('HANDLE LOGOUT STARTED');
+
+    try {
+        const result = await logoutUser();
+
+        if (!result || !result.success) {
+            console.error(
+                'Logout failed:',
+                result ? result.message : 'Unknown logout error'
+            );
+
+            alert(
+                result && result.message
+                    ? result.message
+                    : 'Unable to log out.'
+            );
+
+            return;
+        }
+
+        sessionStorage.removeItem('userRole');
+        sessionStorage.removeItem('userCategory');
+
+        console.log('Supabase logout successful');
+
+        location.reload();
+
+    } catch (error) {
+        console.error(
+            'HANDLE LOGOUT ERROR:',
+            error
+        );
+
+        alert('Unable to complete logout. Please try again.');
+    }
+}
+
 async function logoutUser() {
     try {
 
@@ -463,13 +501,81 @@ function hideAuthMessage() {
         messageBox.style.display = 'none';
     }
 }
-
-
 // =====================================
+async function handlePasswordReset() {
+    hideAuthMessage();
+
+    const emailInput = document.getElementById('liUser');
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    if (!email) {
+        showAuthMessage(
+            'Please enter your email address first.'
+        );
+
+        if (emailInput) {
+            emailInput.focus();
+        }
+
+        return;
+    }
+
+    const loginButton = document.getElementById('loginButton');
+
+    if (loginButton) {
+        loginButton.disabled = true;
+    }
+
+    try {
+        const { error } =
+            await supabaseClient.auth.resetPasswordForEmail(
+                email,
+                {
+                    redirectTo: window.location.origin
+                }
+            );
+
+        if (error) {
+            console.error(
+                'Password reset error:',
+                error
+            );
+
+            showAuthMessage(
+                error.message
+            );
+
+            return;
+        }
+
+        showAuthMessage(
+            'Password reset instructions have been sent to your email.',
+            'success'
+        );
+
+    } catch (error) {
+        console.error(
+            'Password reset error:',
+            error
+        );
+
+        showAuthMessage(
+            'Unable to send password reset instructions. Please try again.'
+        );
+
+    } finally {
+        if (loginButton) {
+            loginButton.disabled = false;
+        }
+    }
+}
+
 // HANDLE LOGIN
 // =====================================
 
 async function handleLogin() {
+
+    console.log('HANDLE LOGIN STARTED');
 
     hideAuthMessage();
 
@@ -479,7 +585,10 @@ async function handleLogin() {
     const password =
         document.getElementById('liPass').value;
 
-    // Validate email
+    // =====================================
+    // VALIDATE EMAIL
+    // =====================================
+
     if (!email) {
 
         showAuthMessage(
@@ -489,7 +598,10 @@ async function handleLogin() {
         return;
     }
 
-    // Validate password
+    // =====================================
+    // VALIDATE PASSWORD
+    // =====================================
+
     if (!password) {
 
         showAuthMessage(
@@ -507,6 +619,10 @@ async function handleLogin() {
 
     try {
 
+        // =====================================
+        // SUPABASE LOGIN
+        // =====================================
+
         const result =
             await loginUser(
                 email,
@@ -516,7 +632,8 @@ async function handleLogin() {
         if (!result.success) {
 
             showAuthMessage(
-                result.message || 'Login failed.'
+                result.message ||
+                'Login failed.'
             );
 
             return;
@@ -532,7 +649,11 @@ async function handleLogin() {
         } =
             await supabaseClient.auth.getSession();
 
-        if (sessionError || !sessionData.session) {
+        if (
+            sessionError ||
+            !sessionData ||
+            !sessionData.session
+        ) {
 
             showAuthMessage(
                 'Login succeeded, but no authentication session was created.'
@@ -576,11 +697,148 @@ async function handleLogin() {
             backendResult
         );
 
-        if (!response.ok || !backendResult.success) {
+        // =====================================
+        // CHECK BACKEND AUTHENTICATION
+        // =====================================
+
+        if (
+            !response.ok ||
+            !backendResult.success ||
+            !backendResult.user
+        ) {
 
             showAuthMessage(
                 backendResult.message ||
                 'Backend authentication failed.'
+            );
+
+            return;
+        }
+
+        // =====================================
+        // AUTHENTICATED USER
+        // =====================================
+
+        const authenticatedUser =
+            backendResult.user;
+
+        console.log(
+            'Authenticated user:',
+            authenticatedUser
+        );
+
+        // =====================================
+        // GET VERIFIED DATABASE ROLE
+        // =====================================
+
+        const userRole =
+            authenticatedUser.role;
+
+        console.log(
+            'Verified user role:',
+            userRole
+        );
+
+        // =====================================
+        // VALIDATE ROLE
+        // =====================================
+
+        const adminRoles = [
+            'admin'
+        ];
+
+        const staffRoles = [
+            'extension_officer',
+            'market_officer',
+            'data_manager',
+            'researcher'
+        ];
+
+        const farmerRoles = [
+            'farmer'
+        ];
+
+        // =====================================
+        // ROLE-BASED ACCESS
+        // =====================================
+
+        if (
+            adminRoles.includes(userRole)
+        ) {
+
+            console.log(
+                'Administrator access granted.'
+            );
+
+            sessionStorage.setItem(
+                'userRole',
+                'admin'
+            );
+
+            sessionStorage.setItem(
+                'userCategory',
+                'administrator'
+            );
+
+        } else if (
+            staffRoles.includes(userRole)
+        ) {
+
+            console.log(
+                'Staff access granted.'
+            );
+
+            sessionStorage.setItem(
+                'userRole',
+                userRole
+            );
+
+            sessionStorage.setItem(
+                'userCategory',
+                'staff'
+            );
+
+        } else if (
+            farmerRoles.includes(userRole)
+        ) {
+
+            console.log(
+                'Farmer access granted.'
+            );
+
+            sessionStorage.setItem(
+                'userRole',
+                'farmer'
+            );
+
+            sessionStorage.setItem(
+                'userCategory',
+                'farmer'
+            );
+
+        } else {
+
+            // =====================================
+            // INVALID / UNKNOWN ROLE
+            // =====================================
+
+            console.error(
+                'Unknown user role:',
+                userRole
+            );
+
+            showAuthMessage(
+                'Your account has an invalid user role. Please contact the administrator.'
+            );
+
+            await supabaseClient.auth.signOut();
+
+            sessionStorage.removeItem(
+                'userRole'
+            );
+
+            sessionStorage.removeItem(
+                'userCategory'
             );
 
             return;
@@ -596,24 +854,60 @@ async function handleLogin() {
         );
 
         console.log(
-            'Authenticated user:',
-            backendResult.user
+            'Login completed successfully.'
         );
 
-        // Hide login screen
+        console.log(
+            'User category:',
+            sessionStorage.getItem(
+                'userCategory'
+            )
+        );
+
+        console.log(
+            'User role:',
+            sessionStorage.getItem(
+                'userRole'
+            )
+        );
+
+        // =====================================
+        // HIDE LOGIN SCREEN
+        // =====================================
+
         const loginScreen =
             document.getElementById('login');
 
         if (loginScreen) {
-            loginScreen.style.display = 'none';
+
+            loginScreen.style.display =
+                'none';
         }
 
-        // Show logout button
+        // =====================================
+        // SHOW APPLICATION
+        // =====================================
+
+        const app =
+            document.getElementById('app');
+
+        if (app) {
+
+            app.style.display =
+                'block';
+        }
+
+        // =====================================
+        // SHOW LOGOUT BUTTON
+        // =====================================
+
         const logoutButton =
             document.getElementById('logoutButton');
 
         if (logoutButton) {
-            logoutButton.style.display = 'block';
+
+            logoutButton.style.display =
+                'block';
         }
 
     } catch (error) {
@@ -630,222 +924,10 @@ async function handleLogin() {
     } finally {
 
         loginButton.disabled = false;
-        loginButton.textContent = 'Sign In ➜';
 
-    }
-}
+        loginButton.textContent =
+            'Sign In ➜';
 
-
-// =====================================
-// HANDLE REGISTRATION
-// =====================================
-
-async function handleRegister() {
-
-    hideAuthMessage();
-
-    const email =
-        document.getElementById('liUser').value.trim();
-
-    const password =
-        document.getElementById('liPass').value;
-
-    if (!email) {
-
-        showAuthMessage(
-            'Please enter your email address.'
-        );
-
-        return;
-    }
-
-    if (!password) {
-
-        showAuthMessage(
-            'Please enter a password.'
-        );
-
-        return;
-    }
-
-    if (password.length < 6) {
-
-        showAuthMessage(
-            'Password must contain at least 6 characters.'
-        );
-
-        return;
-    }
-
-    const registerButton =
-        document.getElementById('registerButton');
-
-    registerButton.disabled = true;
-    registerButton.textContent =
-        'Creating account...';
-
-    try {
-
-        const result =
-            await registerUser(
-                email,
-                password
-            );
-
-        if (!result.success) {
-
-            showAuthMessage(
-                result.message ||
-                'Registration failed.'
-            );
-
-            return;
-        }
-
-        showAuthMessage(
-            result.message ||
-            'Registration successful.',
-            'success'
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Registration process error:',
-            error
-        );
-
-        showAuthMessage(
-            'Unable to complete registration.'
-        );
-
-    } finally {
-
-        registerButton.disabled = false;
-        registerButton.textContent =
-            'Create Account';
-
-    }
-}
-
-
-// =====================================
-// HANDLE LOGOUT
-// =====================================
-
-async function handleLogout() {
-
-    try {
-
-        const result =
-            await logoutUser();
-
-        if (!result.success) {
-
-            showAuthMessage(
-                result.message ||
-                'Logout failed.'
-            );
-
-            return;
-        }
-
-        // Show login screen
-        const loginScreen =
-            document.getElementById('login');
-
-        if (loginScreen) {
-            loginScreen.style.display = 'flex';
-        }
-
-        // Hide logout button
-        const logoutButton =
-            document.getElementById('logoutButton');
-
-        if (logoutButton) {
-            logoutButton.style.display = 'none';
-        }
-
-        // Clear login fields
-        document.getElementById('liUser').value = '';
-        document.getElementById('liPass').value = '';
-
-        showAuthMessage(
-            'You have been signed out.',
-            'success'
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Logout process error:',
-            error
-        );
-
-        showAuthMessage(
-            'Unable to complete logout.'
-        );
-    }
-}
-
-
-// =====================================
-// HANDLE PASSWORD RESET
-// =====================================
-
-async function handlePasswordReset() {
-
-    hideAuthMessage();
-
-    const email =
-        document.getElementById('liUser').value.trim();
-
-    if (!email) {
-
-        showAuthMessage(
-            'Enter your email address first, then click Forgot Password.'
-        );
-
-        return;
-    }
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient.auth.resetPasswordForEmail(
-                email,
-                {
-                    redirectTo:
-                        window.location.origin
-                }
-            );
-
-        if (error) {
-
-            showAuthMessage(
-                error.message
-            );
-
-            return;
-        }
-
-        showAuthMessage(
-            'Password reset instructions have been sent to your email.',
-            'success'
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Password reset error:',
-            error
-        );
-
-        showAuthMessage(
-            'Unable to send password reset instructions.'
-        );
     }
 }
 
@@ -993,19 +1075,19 @@ function fillDistricts(){
 function regionChanged(){ state.region=document.getElementById("selRegion").value; state.district=""; fillDistricts(); showModule(state.current); }
 
 const MODULES = [
- ["dashboard","📊","Farm Performance Dashboard"],
+ ["dashboard","📄Š","Farm Performance Dashboard"],
  ["registration","🧑‍🌾","Farmer Registration"],
  ["cropplan","🌾","Crop Planning"],
- ["weather","🌦️","Weather Advisory"],
+ ["weather","🌦️","Weather Advisory"],
  ["soil","🪱","Soil Management"],
- ["pest","🔬","Pest & Disease AI"],
+ ["pest","🔒","Pest & Disease AI"],
  ["fertiliser","🧪","Fertiliser Recommendation"],
  ["irrigation","💧","Irrigation Management"],
- ["activity","📋","Farm Activities"],
- ["yield","📈","Yield Prediction"],
+ ["activity","📄‹","Farm Activities"],
+ ["yield","📄ˆ","Yield Prediction"],
  ["market","🏪","Market Information"],
  ["assistant","🤖","AI Farm Assistant"],
- ["admin","🛡️","Administration"]];
+ ["admin","🛡️","Administration"]];
 function buildNav(){
   document.getElementById("sideNav").innerHTML = MODULES.map(([id,ic,label])=>
     `<button class="navbtn" id="nav-${id}" onclick="showModule('${id}')" aria-label="${label}"><span class="ic">${ic}</span><span>${label}</span></button>`).join("");
@@ -1026,7 +1108,7 @@ function toast(m){const t=document.getElementById("toast");t.textContent=m;t.sty
 function toggleContrast(){
   const b=document.body; const on=b.getAttribute("data-theme")==="contrast";
   b.setAttribute("data-theme", on?"":"contrast");
-  toast(on?"Normal contrast":"High contrast mode ◐");
+  toast(on?"Normal contrast":"High contrast mode ◐");
 }
 function fontSize(d){
   let s=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fs"))||15;
@@ -1053,20 +1135,20 @@ function closeBroadcast(){ document.getElementById("bcastBg").style.display="non
 function sendBroadcast(){
   const t=document.getElementById("bcTargets").value.trim(), m=document.getElementById("bcMsg").value.trim();
   if(!t||!m){ toast("⚠️ Add recipients and a message."); return; }
-  toast("📤 Broadcasting to "+t.split(",").length+" recipients via "+document.getElementById("bcChannel").value+"…");
+  toast("📄¤ Broadcasting to "+t.split(",").length+" recipients via "+document.getElementById("bcChannel").value+"…");
   setTimeout(()=>{ closeBroadcast(); toast("✅ Advisory delivered successfully!"); },1500);
 }
 
 /* ============================================================
    VIEWS
 ============================================================ */
-const locLine = ()=>`<p class="muted" style="margin-bottom:14px">📍 Showing data for <b>${state.region} → ${state.district}</b> <span class="tag g">AI-personalised</span></p>`;
+const locLine = ()=>`<p class="muted" style="margin-bottom:14px">📄 Showing data for <b>${state.region} → ${state.district}</b> <span class="tag g">AI-personalised</span></p>`;
 function kpi(t,v,s,c){return `<div class="kpi" style="border-left-color:${c}"><div class="num">${v}</div><div style="font-weight:700">${t}</div><small>${s}</small></div>`;}
 
 const VIEWS = {
 
 dashboard: ()=>`
- <h1 style="margin-bottom:4px">📊 Farm Performance Dashboard</h1>${locLine()}
+ <h1 style="margin-bottom:4px">📄Š Farm Performance Dashboard</h1>${locLine()}
  <div class="kpis">
   ${kpi("Registered farmers","1,284","+38 this month","#16a34a")}
   ${kpi("Avg. yield (maize)","4.2 t/ha","+11% vs last season","#0284c7")}
@@ -1078,8 +1160,8 @@ dashboard: ()=>`
   <div class="card"><h3 style="margin-bottom:10px">Top Crops by Acreage — ${state.region}</h3><canvas id="chPie" height="210"></canvas></div>
  </div>
  <div class="grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">
-  <div class="card"><h3>🌦️ Weather Alert</h3><p style="margin-top:8px">Heavy rainfall expected in <b>${state.district}</b> within 48h. <span class="tag a">Advisory sent via SMS</span></p></div>
-  <div class="card"><h3>🔬 Pest Watch</h3><p style="margin-top:8px">Fall Armyworm risk: <span class="stat-warn">MODERATE</span> for maize in ${state.region}. Scout fields twice weekly.</p></div>
+  <div class="card"><h3>🌦️ Weather Alert</h3><p style="margin-top:8px">Heavy rainfall expected in <b>${state.district}</b> within 48h. <span class="tag a">Advisory sent via SMS</span></p></div>
+  <div class="card"><h3>🔒 Pest Watch</h3><p style="margin-top:8px">Fall Armyworm risk: <span class="stat-warn">MODERATE</span> for maize in ${state.region}. Scout fields twice weekly.</p></div>
   <div class="card"><h3>🏪 Market Tip</h3><p style="margin-top:8px">Maize prices up <b>+2.4%</b> at ${state.district} market. Consider staggered selling.</p></div>
  </div>`,
 
@@ -1112,7 +1194,7 @@ cropplan: ()=>`
      ["Sunflower 🌻","ROI 81%","Plant: Nov 1 – Nov 20","Var: Record","#f59e0b"],
      ["Cassava 🍠","ROI 76%","Plant: flexible","Var: Kiroba / Mkumba","#7c3aed"]].map(c=>`
    <div class="card"><h3>${c[0]}</h3><p style="margin:8px 0"><span class="tag g">${c[1]}</span></p>
-   <p>🗓️ ${c[2]}</p><p>🌱 ${c[3]}</p>
+   <p>🗓️ ${c[2]}</p><p>🌱 ${c[3]}</p>
    <div style="margin-top:10px"><div class="conflict-bar"><div style="width:${c[1].slice(4)};background:${c[4]}"></div></div></div>
    <button class="btn-o" style="margin-top:12px" onclick="toast('✅ ${c[0].split(" ")[0]} added to your planting plan!')">Add to Plan</button></div>`).join("")}
  </div>
@@ -1120,12 +1202,12 @@ cropplan: ()=>`
  <p style="margin-top:8px">AI recommends rotating <b>maize → beans</b> to fix nitrogen. Avoid planting tomatoes after peppers (shared blight risk). 78% suitability for your zone based on 10-yr rainfall patterns.</p></div>`,
 
 weather: ()=>{
- const icons=["🌧️","⛅","☀️","🌦️","⛈️","🌧️","☀️"];
+ const icons=["🌧️","☀️","☀️","🌦️","⛈️","🌧️","☀️"];
  const days=["Today","Tue","Wed","Thu","Fri","Sat","Sun"];
  const temps=[[24,29],[23,27],[22,26],[25,30],[23,27],[22,25],[24,31]];
  const rain=[80,30,10,60,90,70,5];
  return `
- <h1>🌦️ Weather Advisory — ML Forecast</h1>${locLine()}
+ <h1>🌦️ Weather Advisory — ML Forecast</h1>${locLine()}
  <div class="card" style="margin-bottom:14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:linear-gradient(120deg,#0369a1,#0284c7);color:#fff">
    <div style="font-size:3rem">${icons[0]}</div>
    <div><div style="font-size:1.8rem;font-weight:800">${temps[0][0]}° – ${temps[0][1]}°C</div><div>Heavy morning showers, 24 km/h NE winds</div></div>
@@ -1136,14 +1218,14 @@ weather: ()=>{
  </div>
  <div class="grid" style="grid-template-columns:1.5fr 1fr">
   <div class="card"><h3 style="margin-bottom:10px">14-Day Rainfall Forecast (mm) — AI model v3</h3><canvas id="chWx" height="190"></canvas></div>
-  <div class="card"><h3>🧠 AI Farming Recommendations</h3>
+  <div class="card"><h3>🧪  AI Farming Recommendations</h3>
    <ul style="margin:10px 0 0 18px;line-height:1.9">
     <li><b>Plant maize within 3 days</b> — soil moisture window optimal.</li>
     <li>Delay spraying Thursday (⛈️ 90% rain) to avoid wash-off.</li>
     <li>Harvest drying crops before Saturday's rains.</li>
     <li>Drainage check: low-lying plots at flood risk Fri.</li>
    </ul>
-   <button class="btn-p" style="margin-top:12px" onclick="toast('📲 Advisory sent to 1,284 farmers via SMS (Kiswahili)')">Send SMS Advisory 📲</button>
+   <button class="btn-p" style="margin-top:12px" onclick="toast('📄² Advisory sent to 1,284 farmers via SMS (Kiswahili)')">Send SMS Advisory 📄²</button>
   </div>
  </div>`;},
 
@@ -1174,12 +1256,12 @@ soil: ()=>`
  </div>`,
 
 pest: ()=>`
- <h1>🔬 Pest &amp; Disease AI</h1>${locLine()}
+ <h1>🔒 Pest &amp; Disease AI</h1>${locLine()}
  <div class="grid" style="grid-template-columns:1fr 1.3fr">
   <div class="card">
    <h3 style="margin-bottom:12px">Upload Crop Photo</h3>
    <div class="dropzone" onclick="document.getElementById('pestFile').click()">
-    <div style="font-size:2.4rem">📷</div>
+    <div style="font-size:2.4rem">📄·</div>
     <p>Tap to upload or take a photo of the affected leaf/plant</p>
     <input type="file" id="pestFile" accept="image/*" style="display:none" onchange="pestUpload(event)">
    </div>
@@ -1229,7 +1311,7 @@ irrigation: ()=>`
  </div>`,
 
 activity: ()=>`
- <h1>📋 Farm Activity Management</h1>${locLine()}
+ <h1>📄‹ Farm Activity Management</h1>${locLine()}
  <div class="grid" style="grid-template-columns:1fr 1.2fr">
   <div class="card">
    <h3 style="margin-bottom:12px">Log New Activity</h3>
@@ -1250,7 +1332,7 @@ activity: ()=>`
  </div>`,
 
 yield: ()=>`
- <h1>📈 Yield Prediction (ML Model v3)</h1>${locLine()}
+ <h1>📄ˆ Yield Prediction (ML Model v3)</h1>${locLine()}
  <div class="grid" style="grid-template-columns:1fr 1.5fr">
   <div class="card">
    <h3 style="margin-bottom:12px">Predict My Harvest</h3>
@@ -1269,7 +1351,7 @@ market: ()=>`
  <div class="grid" style="grid-template-columns:1.6fr 1fr">
   <div class="card">
    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-    <input id="mktSearch" placeholder="🔍 Search commodity…" oninput="renderMarket()" style="flex:1;min-width:180px">
+    <input id="mktSearch" placeholder="🔒 Search commodity…" oninput="renderMarket()" style="flex:1;min-width:180px">
     <select id="mktSort" onchange="renderMarket()"><option value="name">Sort: Name</option><option value="price">Sort: Price ↓</option><option value="chg">Sort: Change ↓</option></select>
    </div>
    <table><thead><tr><th>Commodity</th><th>Unit</th><th>Price (TZS)</th><th>24h</th><th>Buyer / Market</th></tr></thead><tbody id="mktBody"></tbody></table>
@@ -1293,18 +1375,18 @@ assistant: ()=>`
    <div class="quick" id="quickQs"></div>
   </div>
   <div class="card">
-   <h3 style="margin-bottom:10px">📞 Offline Channels</h3>
-   <div class="pill-q" onclick="toast('📱 Dialing *152*99# — USSD advisory menu')"><b>USSD:</b> *152*99# (any phone, no internet)</div>
-   <div class="pill-q" onclick="toast('☎️ Connecting to toll-free advisory line…')"><b>Toll-free IVR:</b> 0800 710 011 (voice, Kiswahili)</div>
+   <h3 style="margin-bottom:10px">📄ž Offline Channels</h3>
+   <div class="pill-q" onclick="toast('📄 Dialing *152*99# — USSD advisory menu')"><b>USSD:</b> *152*99# (any phone, no internet)</div>
+   <div class="pill-q" onclick="toast('☎️ Connecting to toll-free advisory line…')"><b>Toll-free IVR:</b> 0800 710 011 (voice, Kiswahili)</div>
    <div class="pill-q" onclick="toast('💬 WhatsApp bot opening…')"><b>WhatsApp:</b> +255 765 000 123</div>
    <div class="access-note" style="margin-top:12px">Designed for low-literacy users: icons, voice-first flow, and simple language throughout.</div>
   </div>
  </div>`,
 
 admin: ()=>{
- if(state.role!=="Administrator") return `<div class="card"><h2>🛡️ Restricted</h2><p class="muted" style="margin-top:8px">Administrator privileges are required to manage user accounts, releases and system security. You are signed in as <b>${state.role}</b>.</p></div>`;
+ if(state.role!=="Administrator") return `<div class="card"><h2>🛡️ Restricted</h2><p class="muted" style="margin-top:8px">Administrator privileges are required to manage user accounts, releases and system security. You are signed in as <b>${state.role}</b>.</p></div>`;
  return `
- <h1>🛡️ Administration Panel</h1>${locLine()}
+ <h1>🛡️ Administration Panel</h1>${locLine()}
  <div class="kpis">
   ${kpi("Total users","4","2 farmers · 1 officer","#16a34a")}
   ${kpi("System version","v2.4","next release: Mar 2027","#0284c7")}
@@ -1318,22 +1400,22 @@ admin: ()=>{
     <input id="auName" placeholder="Full name" style="flex:2;min-width:130px">
     <input id="auPhone" placeholder="Phone" style="flex:2;min-width:120px">
     <select id="auRole" style="flex:1;min-width:120px"><option>Farmer</option><option>Extension Officer</option><option>Administrator</option></select>
-    <button class="btn-p" onclick="addUser()">＋ Add</button>
+    <button class="btn-p" onclick="addUser()">ï¼‹ Add</button>
    </div>
    <table><thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Region</th><th>Status</th><th></th></tr></thead><tbody id="userTbl"></tbody></table>
   </div>
   <div>
-   <div class="card" style="margin-bottom:14px"><h3>🛡️ Security &amp; Release Management</h3>
+   <div class="card" style="margin-bottom:14px"><h3>🛡️ Security &amp; Release Management</h3>
     <ul style="margin:10px 0 0 18px;line-height:2">
      <li>Policy: security patch + feature release <b>every 6 months</b></li>
      <li>Current: <b>v2.4 (Sept 2026)</b> · Next: <b>v3.0 (Mar 2027)</b></li>
      <li>TLS 1.3 · AES-256 at rest · 2FA for admins</li>
      <li>Automatic logout after 30 min inactivity</li>
     </ul>
-    <button class="btn-o" style="margin-top:10px" onclick="toast('📦 Release v3.0 scheduled for March 2027 — changelog draft opened')">Schedule v3.0 Release 📦</button>
-    <button class="btn-o" style="margin-top:8px" onclick="toast('🛡️ Forcing password rotation for all users…')">Force Password Rotation</button>
+    <button class="btn-o" style="margin-top:10px" onclick="toast('📄 Release v3.0 scheduled for March 2027 — changelog draft opened')">Schedule v3.0 Release 📄</button>
+    <button class="btn-o" style="margin-top:8px" onclick="toast('🛡️ Forcing password rotation for all users…')">Force Password Rotation</button>
    </div>
-   <div class="card"><h3>🎛️ Model Management</h3>
+   <div class="card"><h3>🎛️ Model Management</h3>
     <table style="margin-top:8px"><tbody>
      <tr><td>Yield predictor v3</td><td class="stat-ok">Active</td></tr>
      <tr><td>Pest CNN v2.1</td><td class="stat-ok">Active</td></tr>
@@ -1375,13 +1457,13 @@ let FARMERS=[
 function renderFarmers(){
   document.querySelector("#farmerTbl tbody").innerHTML=FARMERS.map((f,i)=>
    `<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td>${f[2]}</td><td>${f[3]} ac</td><td>${f[4]}</td>
-    <td>${state.role==="Administrator"?`<button class="btn-d" style="padding:4px 10px;font-size:.75rem" onclick="FARMERS.splice(${i},1);renderFarmers();toast('🗑️ Farmer removed')">Delete</button>`:""}</td></tr>`).join("");
+    <td>${state.role==="Administrator"?`<button class="btn-d" style="padding:4px 10px;font-size:.75rem" onclick="FARMERS.splice(${i},1);renderFarmers();toast('🗑️ Farmer removed')">Delete</button>`:""}</td></tr>`).join("");
 }
 function regFarmer(){
   const g=id=>document.getElementById(id).value.trim();
   if(!g("frName")||!g("frPhone")){toast("⚠️ Name and phone are required.");return;}
   FARMERS.unshift([g("frName"),g("frPhone"),g("frCrop"),g("frSize")||"—",g("frExp")]);
-  renderFarmers(); toast("✅ Farmer registered! Welcome SMS sent in Kiswahili 📲"); speak("Hongera! Farmer registered.");
+  renderFarmers(); toast("✅ Farmer registered! Welcome SMS sent in Kiswahili 📄²"); speak("Hongera! Farmer registered.");
 }
 
 /* Pest AI */
@@ -1390,10 +1472,10 @@ function pestUpload(e){
   const img=document.getElementById("pestImg");
   img.src=URL.createObjectURL(f); img.style.display="block";
   const out=document.getElementById("pestResult");
-  out.innerHTML=`<h3>🔬 AI Diagnosis</h3><p class="muted" style="margin-top:8px">🧠 Analysing image with CNN model v2.1…</p><div class="conflict-bar" style="margin-top:12px"><div id="pbar" style="width:5%"></div></div>`;
+  out.innerHTML=`<h3>🔒 AI Diagnosis</h3><p class="muted" style="margin-top:8px">🧪  Analysing image with CNN model v2.1…</p><div class="conflict-bar" style="margin-top:12px"><div id="pbar" style="width:5%"></div></div>`;
   let p=5; const iv=setInterval(()=>{p=Math.min(100,p+Math.random()*22);const b=document.getElementById("pbar");if(b)b.style.width=p+"%";
    if(p>=100){clearInterval(iv);
-    out.innerHTML=`<h3 style="margin-bottom:10px">🔬 AI Diagnosis — Complete</h3>
+    out.innerHTML=`<h3 style="margin-bottom:10px">🔒 AI Diagnosis — Complete</h3>
     <p><span class="tag r">Action needed</span></p>
     <h3 style="margin:12px 0 6px">1. Fall Armyworm (Spodoptera frugiperda)</h3>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="conflict-bar" style="flex:1"><div style="width:87%;background:var(--red-600)"></div></div><b>87%</b></div>
@@ -1405,7 +1487,7 @@ function pestUpload(e){
      <li>Scout at dawn — hand-pick egg masses</li>
      <li>Re-check in 5 days; rotate active ingredient</li>
      <li>Cost estimate: TZS 28,000/acre</li></ul></div>
-    <button class="btn-p" style="margin-top:12px" onclick="toast('📲 Treatment plan sent via SMS (Kiswahili) + voice call')">Send Plan to Farmer 📲</button>`;
+    <button class="btn-p" style="margin-top:12px" onclick="toast('📄² Treatment plan sent via SMS (Kiswahili) + voice call')">Send Plan to Farmer 📄²</button>`;
     speak("Diagnosis complete. Fall armyworm detected with 87 percent confidence. Treatment plan ready.");
    }},250);
 }
@@ -1425,7 +1507,7 @@ function calcFert(){
     ${mop?`<tr><td>MOP (K)</td><td><b>${mop} kg</b></td></tr>`:""}
     <tr><td>Estimated cost</td><td><b>TZS ${cost.toLocaleString()}</b></td></tr>
    </tbody></table>
-   <p style="margin-top:10px" class="muted">Avoids over-application of ≈ ${Math.round(30*size)} kg N — saves money and protects Lake Victoria watershed. ♻️</p>`;
+   <p style="margin-top:10px" class="muted">Avoids over-application of ≈ ${Math.round(30*size)} kg N — saves money and protects Lake Victoria watershed. ♻️</p>`;
 }
 
 /* Yield prediction */
@@ -1473,7 +1555,7 @@ function renderUsers(){
    <td><span class="tag ${u.status==="Active"?"g":"r"}">${u.status}</span></td>
    <td><button class="btn-d" style="padding:4px 10px;font-size:.75rem" onclick="delUser(${u.id})">Delete</button></td></tr>`).join("");
 }
-function delUser(id){ USERS=USERS.filter(u=>u.id!==id); renderUsers(); toast("🗑️ Account deleted (admin audit log updated)."); }
+function delUser(id){ USERS=USERS.filter(u=>u.id!==id); renderUsers(); toast("🗑️ Account deleted (admin audit log updated)."); }
 function addUser(){
   const n=document.getElementById("auName").value.trim(), p=document.getElementById("auPhone").value.trim();
   if(!n||!p){toast("⚠️ Name and phone required.");return;}
@@ -1484,9 +1566,9 @@ function addUser(){
 /* AI Assistant */
 const KB=[
  [/lini|when.*plant|plant.*when|kupanda/i,`🤖 For **${state.region} → ${state.district}**, the Vuli short-rains window opens in ~3 weeks. Best planting date for maize: **15 Oct – 5 Nov**. Soil moisture looks favourable. I'll SMS you a reminder 2 days before. 🌱`],
- [/mvua|rain|weather|hali ya hewa/i,`🤖 Forecast for ${state.district}: **80% rain today**, clearing by Wednesday, heavy again Friday–Saturday (90%). Great planting window right after Friday's rain! 🌧️`],
+ [/mvua|rain|weather|hali ya hewa/i,`🤖 Forecast for ${state.district}: **80% rain today**, clearing by Wednesday, heavy again Friday–Saturday (90%). Great planting window right after Friday's rain! 🌧️`],
  [/fertil|mbolea|urea|dap/i,`🤖 For your 1.5 ha maize plot: **150 kg DAP** at planting + **75 kg urea** top-dress at knee height. ≈ TZS 144,000. Given your Medium soil N, this should lift yield ~+1.4 t/ha. 🧪`],
- [/mdudu|worm|armyworm|pest|wagongo|adudu|kupe|insect/i,`🤖 Fall Armyworm risk in ${state.region} is **MODERATE** this week. Scout at dawn twice weekly; look for window-pane leaf damage. If found: Emamectin benzoate in the evening. Upload a photo in the Pest AI module and I'll confirm. 🔬`],
+ [/mdudu|worm|armyworm|pest|wagongo|adudu|kupe|insect/i,`🤖 Fall Armyworm risk in ${state.region} is **MODERATE** this week. Scout at dawn twice weekly; look for window-pane leaf damage. If found: Emamectin benzoate in the evening. Upload a photo in the Pest AI module and I'll confirm. 🔒`],
  [/bei|price|market|soko|uuza/i,`🤖 Today's ${state.district} prices: Maize TZS 65,000/bag (+2.4% ▲), Beans TZS 180,000/bag (+5.1% ▲). My model suggests **holding maize ~2 weeks** for +6%. Full list in Market module. 🏪`],
  [/rekodi|register|registration|jisajili/i,`🤖 To register a farmer I need: full name, phone, farm size, main crop. You can also use the Farmer Registration module — or just tell me the details here! 🧑‍🌾`],
  [/mvua kubwa|flood|mafuriko|drought|kiangazi/i,`🤖 Alert: flood risk is elevated for low-lying plots near ${state.district} on Friday. Ensure drainage channels are clear and move harvested grain to raised storage. I've queued an SMS advisory. 🚨`],
@@ -1495,7 +1577,7 @@ const KB=[
 function initChat(){
   const log=document.getElementById("chatLog");
   log.innerHTML=`<div class="msg ai">🤖 Habari! I'm the AgriSmart AI assistant for <b>${state.region} → ${state.district}</b>. Ninaweza kukusaidia kwa kilimo — weather, mbolea, wadudu, soko. How can I help? 🌱</div>`;
-  document.getElementById("quickQs").innerHTML=["Lini nipande mahindi? 🌽","Hali ya hewa leo? 🌦️","Mbolea ngapi? 🧪","Bei ya mahindi? 🏪","Kuna wadudu? 🔬"]
+  document.getElementById("quickQs").innerHTML=["Lini nipande mahindi? 🌽","Hali ya hewa leo? 🌦️","Mbolea ngapi? 🧪","Bei ya mahindi? 🏪","Kuna wadudu? 🔒"]
    .map(q=>`<button onclick="document.getElementById('chatIn').value='${q.replace(/'/g,"")}';sendChat()">${q}</button>`).join("");
 }
 function sendChat(){
@@ -1513,7 +1595,7 @@ function voiceInput(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const btn=document.getElementById("micBtn");
   if(!SR){toast("🎤 Voice input not supported in this browser — type instead.");return;}
-  const r=new SR(); r.lang="sw-TZ"; btn.textContent="⏺️"; toast("🎤 Sema sasa… (speak now)");
+  const r=new SR(); r.lang="sw-TZ"; btn.textContent="▶️"; toast("🎤 Sema sasa… (speak now)");
   r.onresult=e=>{document.getElementById("chatIn").value=e.results[0][0].transcript;sendChat();};
   r.onend=()=>btn.textContent="🎤"; r.onerror=()=>{btn.textContent="🎤";toast("Mic error — try again.");};
   r.start();
@@ -1677,3 +1759,4 @@ document.addEventListener(
 </script>
 </body>
 </html>
+
